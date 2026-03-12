@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Download, FileText, Filter, Info, ChevronDown } from "lucide-react";
+import { Download, FileText, Filter, Info, ChevronDown, Calculator } from "lucide-react";
+import FatorRCalculator from "@/components/FatorRCalculator";
 
 const empresasData = [
   {
