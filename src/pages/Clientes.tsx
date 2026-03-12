@@ -2,9 +2,10 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Upload, Search, Pencil } from "lucide-react";
+import { Plus, Upload, Search, Pencil, FileText } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
+import { parsePgdasPdf, PgdasData } from "@/lib/parsePgdasPdf";
 
 const formatCNPJ = (value: string) => {
   const nums = value.replace(/\D/g, "").slice(0, 14);
@@ -22,6 +23,8 @@ const Clientes = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState({ razao_social: "", cnpj: "", email: "", telefone: "" });
+  const [pgdasData, setPgdasData] = useState<PgdasData | null>(null);
+  const [importingPdf, setImportingPdf] = useState(false);
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -37,17 +40,62 @@ const Clientes = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (values: typeof form) => {
+      let clientId: string;
+
       if (editingId) {
         const { error } = await supabase.from("clients").update(values).eq("id", editingId);
         if (error) throw error;
+        clientId = editingId;
       } else {
-        const { error } = await supabase.from("clients").insert({ ...values, created_by: user?.id });
+        const { data, error } = await supabase
+          .from("clients")
+          .insert({ ...values, created_by: user?.id })
+          .select("id")
+          .single();
         if (error) throw error;
+        clientId = data.id;
+      }
+
+      // If we have PGDAS data, save monthly data
+      if (pgdasData && clientId) {
+        const months = new Set([
+          ...Object.keys(pgdasData.receitasMensais),
+          ...Object.keys(pgdasData.folhaMensais),
+        ]);
+
+        const upserts = Array.from(months).map((mesRef) => ({
+          client_id: clientId,
+          mes_referencia: mesRef,
+          folha_salarios: pgdasData.folhaMensais[mesRef] || 0,
+          faturamento: pgdasData.receitasMensais[mesRef] || 0,
+          created_by: user?.id,
+        }));
+
+        if (upserts.length > 0) {
+          // Delete existing data for this client+months, then insert
+          for (const u of upserts) {
+            await supabase
+              .from("monthly_data")
+              .delete()
+              .eq("client_id", clientId)
+              .eq("mes_referencia", u.mes_referencia);
+          }
+          const { error: mdError } = await supabase.from("monthly_data").insert(upserts);
+          if (mdError) throw mdError;
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      toast.success(editingId ? "Cliente atualizado!" : "Cliente cadastrado!");
+      queryClient.invalidateQueries({ queryKey: ["monthly_data_abatimento"] });
+      queryClient.invalidateQueries({ queryKey: ["monthly_data"] });
+      toast.success(
+        editingId
+          ? "Cliente atualizado!"
+          : pgdasData
+          ? "Cliente cadastrado com dados de abatimento importados!"
+          : "Cliente cadastrado!"
+      );
       resetForm();
     },
     onError: (err: any) => {
@@ -63,6 +111,7 @@ const Clientes = () => {
     setForm({ razao_social: "", cnpj: "", email: "", telefone: "" });
     setShowForm(false);
     setEditingId(null);
+    setPgdasData(null);
   };
 
   const handleEdit = (client: any) => {
@@ -74,6 +123,48 @@ const Clientes = () => {
     });
     setEditingId(client.id);
     setShowForm(true);
+    setPgdasData(null);
+  };
+
+  const handleImportPgdas = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportingPdf(true);
+    try {
+      const data = await parsePgdasPdf(file);
+
+      // Validate CNPJ if already filled
+      const formCnpj = form.cnpj.replace(/\D/g, "");
+      if (formCnpj && formCnpj.length >= 8) {
+        // Compare basic CNPJ (first 8 digits) or full
+        const pdfCnpjBasic = data.cnpj.slice(0, 8);
+        const formCnpjBasic = formCnpj.slice(0, 8);
+        if (pdfCnpjBasic !== formCnpjBasic) {
+          toast.error("CNPJ não coincide com o inserido nos campos de cadastro.");
+          setImportingPdf(false);
+          e.target.value = "";
+          return;
+        }
+      }
+
+      // If CNPJ field is empty, fill it from PDF
+      if (!formCnpj && data.cnpj) {
+        setForm((prev) => ({ ...prev, cnpj: data.cnpj }));
+      }
+
+      setPgdasData(data);
+      const totalMonths = new Set([
+        ...Object.keys(data.receitasMensais),
+        ...Object.keys(data.folhaMensais),
+      ]).size;
+      toast.success(`Arquivo importado! ${totalMonths} meses de dados encontrados.`);
+    } catch (err) {
+      console.error("Erro ao ler PDF:", err);
+      toast.error("Erro ao ler o arquivo PDF. Verifique se é um extrato PGDAS-D válido.");
+    }
+    setImportingPdf(false);
+    e.target.value = "";
   };
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,6 +276,29 @@ const Clientes = () => {
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+
+            {/* Import PGDAS button */}
+            <div className="col-span-2">
+              <label className="inline-flex items-center gap-2 border border-dashed border-primary/50 text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors">
+                <FileText className="w-4 h-4" />
+                {importingPdf ? "Importando..." : pgdasData ? "✓ Abatimento importado" : "Importar Abatimento (PGDAS-D)"}
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleImportPgdas}
+                  disabled={importingPdf}
+                  className="hidden"
+                />
+              </label>
+              {pgdasData && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {Object.keys(pgdasData.folhaMensais).length} meses de folha e{" "}
+                  {Object.keys(pgdasData.receitasMensais).length} meses de receita encontrados.
+                  PA: {pgdasData.periodoApuracao}
+                </p>
+              )}
+            </div>
+
             <div className="col-span-2 flex gap-3 pt-2">
               <button
                 type="submit"
