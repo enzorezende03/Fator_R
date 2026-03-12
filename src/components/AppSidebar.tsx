@@ -1,6 +1,7 @@
-import { LayoutDashboard, Calculator, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Calculator, Users, TrendingUp, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -9,18 +10,26 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Calculadora", url: "/calculadora", icon: Calculator },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -55,6 +64,20 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        {!collapsed && user && (
+          <p className="text-xs text-sidebar-foreground/50 truncate mb-2 px-1">
+            {user.email}
+          </p>
+        )}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full text-sm"
+        >
+          <LogOut className="w-5 h-5 shrink-0" />
+          {!collapsed && <span>Sair</span>}
+        </button>
+      </SidebarFooter>
     </Sidebar>
   );
 }
