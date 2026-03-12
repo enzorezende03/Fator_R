@@ -191,7 +191,6 @@ const Abatimento = () => {
           <span className="font-semibold text-foreground min-w-[100px] text-center text-sm">
             {formatMonth(addMonths(refDate, 1))}
           </span>
-          </span>
           <button
             onClick={() => setRefDate(addMonths(refDate, 1))}
             className="p-2 rounded-lg border border-border hover:bg-secondary transition-colors"
