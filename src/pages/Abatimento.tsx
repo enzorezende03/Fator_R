@@ -156,7 +156,7 @@ const Abatimento = () => {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-foreground mb-2">Abatimento</h1>
+        <h1 className="font-display text-3xl font-bold text-foreground mb-2">Cálculo do Fator R</h1>
         <p className="text-sm text-muted-foreground">
           Preencha os valores de Folha de Salários e RBA (Receita Bruta Acumulada) dos últimos 12 meses.
         </p>
