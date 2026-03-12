@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
 import Calculadora from "./pages/Calculadora";
 import Administradores from "./pages/Administradores";
+import Abatimento from "./pages/Abatimento";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
