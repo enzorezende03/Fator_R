@@ -390,11 +390,11 @@ const Abatimento = () => {
                   </span>
                 </div>
               )}
-              {totalRba > 0 && (
+              {totalRba > 0 && aliquotaEfetiva !== null && (
                 <div>
                   <p className="text-xs text-muted-foreground">Alíquota Efetiva</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {fatorR >= 0.28 ? "6,00%" : "15,50%"}
+                    {aliquotaEfetiva.toFixed(2).replace(".", ",")}%
                   </p>
                 </div>
               )}
