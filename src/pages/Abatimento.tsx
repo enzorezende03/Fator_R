@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Save, ChevronLeft, ChevronRight, ChevronsUpDown, Check, Upload } from "lucide-react";
 import { parseCartaFaturamento } from "@/lib/parseCartaFaturamento";
+import { calcularAliquotaEfetiva } from "@/lib/aliquotaEfetiva";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
