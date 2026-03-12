@@ -274,23 +274,7 @@ const Abatimento = () => {
         <>
           {/* Folha de Salários */}
           <div className="bg-card rounded-xl border border-border p-6 mb-6">
-            <div className="flex items-start justify-between mb-1">
-              <h2 className="font-display text-lg font-bold text-foreground">Folha de Salários</h2>
-              <div className="text-right">
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Faturamento do Mês</label>
-                <input
-                  type="text"
-                  value={faturamentoMesFolha}
-                  onChange={(e) => setFaturamentoMesFolha(e.target.value)}
-                  onBlur={(e) => {
-                    const num = parseBRL(e.target.value);
-                    setFaturamentoMesFolha(num > 0 ? formatBRL(num) : "");
-                  }}
-                  placeholder="R$ 0,00"
-                  className="w-40 px-3 py-1.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm text-right"
-                />
-              </div>
-            </div>
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">Folha de Salários</h2>
             <p className="text-xs text-muted-foreground mb-4">
               Folha de Salários, incluídos encargos (até 12 meses anteriores ao Período de Apuração) (R$):
             </p>
