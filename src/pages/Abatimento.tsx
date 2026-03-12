@@ -79,6 +79,8 @@ const Abatimento = () => {
   // Local state for form values
   const [folhaValues, setFolhaValues] = useState<Record<string, string>>({});
   const [rbaValues, setRbaValues] = useState<Record<string, string>>({});
+  const [faturamentoMesFolha, setFaturamentoMesFolha] = useState("");
+  const [faturamentoMesRba, setFaturamentoMesRba] = useState("");
 
   // Initialize from DB data
   useEffect(() => {
