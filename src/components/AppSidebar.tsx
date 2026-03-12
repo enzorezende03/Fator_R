@@ -2,6 +2,8 @@ import { LayoutDashboard, Calculator, Users, TrendingUp, LogOut, ShieldCheck, Fi
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
