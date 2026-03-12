@@ -22,7 +22,7 @@ const Clientes = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({ razao_social: "", cnpj: "", email: "", telefone: "" });
+  const [form, setForm] = useState({ razao_social: "", cnpj: "" });
   const [pgdasData, setPgdasData] = useState<PgdasData | null>(null);
   const [importingPdf, setImportingPdf] = useState(false);
 
@@ -56,7 +56,6 @@ const Clientes = () => {
         clientId = data.id;
       }
 
-      // If we have PGDAS data, save monthly data
       if (pgdasData && clientId) {
         const months = new Set([
           ...Object.keys(pgdasData.receitasMensais),
@@ -72,7 +71,6 @@ const Clientes = () => {
         }));
 
         if (upserts.length > 0) {
-          // Delete existing data for this client+months, then insert
           for (const u of upserts) {
             await supabase
               .from("monthly_data")
@@ -108,7 +106,7 @@ const Clientes = () => {
   });
 
   const resetForm = () => {
-    setForm({ razao_social: "", cnpj: "", email: "", telefone: "" });
+    setForm({ razao_social: "", cnpj: "" });
     setShowForm(false);
     setEditingId(null);
     setPgdasData(null);
@@ -118,8 +116,6 @@ const Clientes = () => {
     setForm({
       razao_social: client.razao_social,
       cnpj: client.cnpj,
-      email: client.email || "",
-      telefone: client.telefone || "",
     });
     setEditingId(client.id);
     setShowForm(true);
@@ -130,27 +126,24 @@ const Clientes = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const formCnpj = form.cnpj.replace(/\D/g, "");
+    if (!formCnpj || formCnpj.length < 8) {
+      toast.error("Preencha o CNPJ no seu respectivo campo.");
+      e.target.value = "";
+      return;
+    }
+
     setImportingPdf(true);
     try {
       const data = await parsePgdasPdf(file);
 
-      // Validate CNPJ if already filled
-      const formCnpj = form.cnpj.replace(/\D/g, "");
-      if (formCnpj && formCnpj.length >= 8) {
-        // Compare basic CNPJ (first 8 digits) or full
-        const pdfCnpjBasic = data.cnpj.slice(0, 8);
-        const formCnpjBasic = formCnpj.slice(0, 8);
-        if (pdfCnpjBasic !== formCnpjBasic) {
-          toast.error("CNPJ não coincide com o inserido nos campos de cadastro.");
-          setImportingPdf(false);
-          e.target.value = "";
-          return;
-        }
-      }
-
-      // If CNPJ field is empty, fill it from PDF
-      if (!formCnpj && data.cnpj) {
-        setForm((prev) => ({ ...prev, cnpj: data.cnpj }));
+      const pdfCnpjBasic = data.cnpj.slice(0, 8);
+      const formCnpjBasic = formCnpj.slice(0, 8);
+      if (pdfCnpjBasic !== formCnpjBasic) {
+        toast.error("CNPJ não coincide com o inserido nos campos de cadastro.");
+        setImportingPdf(false);
+        e.target.value = "";
+        return;
       }
 
       setPgdasData(data);
@@ -180,8 +173,6 @@ const Clientes = () => {
       .map((row) => ({
         razao_social: String(row["Razão Social"] || row["razao_social"] || row["RAZAO_SOCIAL"] || row["Empresa"] || "").trim(),
         cnpj: String(row["CNPJ"] || row["cnpj"] || "").replace(/\D/g, ""),
-        email: String(row["E-mail"] || row["email"] || row["Email"] || "").trim() || null,
-        telefone: String(row["Telefone"] || row["telefone"] || row["Tel"] || "").trim() || null,
         created_by: user?.id,
       }))
       .filter((r) => r.razao_social && r.cnpj.length >= 14);
@@ -230,7 +221,6 @@ const Clientes = () => {
         </div>
       </div>
 
-      {/* Form */}
       {showForm && (
         <div className="bg-card rounded-xl border border-border p-6 mb-6 animate-in fade-in slide-in-from-top-2">
           <h2 className="font-display text-xl font-bold text-foreground mb-4">
@@ -249,7 +239,7 @@ const Clientes = () => {
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <div>
+            <div className="col-span-2">
               <label className="block text-sm font-medium text-muted-foreground mb-1">CNPJ</label>
               <input
                 required
@@ -259,25 +249,7 @@ const Clientes = () => {
                 className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">E-mail</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">Telefone</label>
-              <input
-                value={form.telefone}
-                onChange={(e) => setForm({ ...form, telefone: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
 
-            {/* Import PGDAS button */}
             <div className="col-span-2">
               <label className="inline-flex items-center gap-2 border border-dashed border-primary/50 text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors">
                 <FileText className="w-4 h-4" />
@@ -319,7 +291,6 @@ const Clientes = () => {
         </div>
       )}
 
-      {/* Search */}
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
@@ -330,7 +301,6 @@ const Clientes = () => {
         />
       </div>
 
-      {/* Table */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
       ) : (
@@ -340,8 +310,6 @@ const Clientes = () => {
               <tr className="bg-secondary">
                 <th className="text-left px-5 py-3 font-semibold text-foreground">Razão Social</th>
                 <th className="text-left px-5 py-3 font-semibold text-foreground">CNPJ</th>
-                <th className="text-left px-5 py-3 font-semibold text-foreground">E-mail</th>
-                <th className="text-left px-5 py-3 font-semibold text-foreground">Telefone</th>
                 <th className="px-5 py-3 w-16"></th>
               </tr>
             </thead>
@@ -350,8 +318,6 @@ const Clientes = () => {
                 <tr key={client.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                   <td className="px-5 py-3 font-medium text-foreground">{client.razao_social}</td>
                   <td className="px-5 py-3 text-muted-foreground">{formatCNPJ(client.cnpj)}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{client.email || "—"}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{client.telefone || "—"}</td>
                   <td className="px-5 py-3">
                     <button
                       onClick={() => handleEdit(client)}
@@ -364,7 +330,7 @@ const Clientes = () => {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-muted-foreground">
+                  <td colSpan={3} className="px-5 py-12 text-center text-muted-foreground">
                     {search ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
                   </td>
                 </tr>
