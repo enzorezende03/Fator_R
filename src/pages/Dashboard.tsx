@@ -241,7 +241,7 @@ const Dashboard = () => {
       </div>
 
       {/* Table */}
-      <div className="w-full overflow-x-auto rounded-xl border border-border">
+      <div className="w-full rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-secondary text-left">
