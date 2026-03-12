@@ -155,6 +155,8 @@ const Abatimento = () => {
   const totalFolha = months.reduce((sum, m) => sum + parseBRL(folhaValues[toISODate(m)] || "0"), 0);
   const totalRba = months.reduce((sum, m) => sum + parseBRL(rbaValues[toISODate(m)] || "0"), 0);
   const fatorR = totalRba > 0 ? totalFolha / totalRba : 0;
+  const isAnexoIII = fatorR >= 0.28;
+  const aliquotaEfetiva = totalRba > 0 ? calcularAliquotaEfetiva(totalRba, isAnexoIII) : null;
 
   return (
     <div className="p-8">
