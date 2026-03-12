@@ -1,9 +1,12 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { Save, ChevronLeft, ChevronRight, ChevronsUpDown, Check } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 const formatMonth = (date: Date) => {
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -138,19 +141,42 @@ const Abatimento = () => {
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="flex-1 min-w-[250px]">
           <label className="block text-sm font-medium text-muted-foreground mb-1">Cliente</label>
-          <select
-            value={selectedClientId || ""}
-            onChange={(e) => {
-              setSelectedClientId(e.target.value || null);
-              setInitialized(false);
-            }}
-            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-          >
-            <option value="">Selecione um cliente...</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.razao_social}</option>
-            ))}
-          </select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                role="combobox"
+                className="flex w-full items-center justify-between px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+              >
+                {selectedClientId
+                  ? clients.find((c) => c.id === selectedClientId)?.razao_social
+                  : "Selecione ou pesquise um cliente..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Pesquisar cliente..." />
+                <CommandList>
+                  <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                  <CommandGroup>
+                    {clients.map((c) => (
+                      <CommandItem
+                        key={c.id}
+                        value={c.razao_social}
+                        onSelect={() => {
+                          setSelectedClientId(c.id === selectedClientId ? null : c.id);
+                          setInitialized(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", selectedClientId === c.id ? "opacity-100" : "opacity-0")} />
+                        {c.razao_social}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="flex items-center gap-2">
