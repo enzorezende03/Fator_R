@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Download, FileText, Info, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Download } from "lucide-react";
+import { toast } from "sonner";
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -18,12 +19,72 @@ const getMonthDate = (date: Date) =>
 const addMonths = (date: Date, months: number) =>
   new Date(date.getFullYear(), date.getMonth() + months, 1);
 
+type FilterType = "all" | "gte28" | "lt28" | "na";
+
+const generateReportCSV = (
+  clients: ReturnType<typeof buildClientCalcs>,
+  refDate: Date,
+  periodStart: Date,
+  periodEnd: Date
+) => {
+  const header = "Empresa;CNPJ;Mês Ref.;RBA 12 Meses;Folha 12 Meses;Fator R;Anexo;Complemento de Folha;Recomendação";
+  const rows = clients.map((c) => {
+    const fatorRStr = c.fatorR !== null ? (c.fatorR * 100).toFixed(2) + "%" : "N/A";
+    const anexoStr = c.fatorR === null ? "N/A" : c.fatorR >= 0.28 ? "Anexo III" : "Anexo V";
+    const complemento = c.complementoFolha > 0 ? c.complementoFolha.toFixed(2).replace(".", ",") : "0,00";
+    const recomendacao = c.complementoFolha > 0
+      ? `Aumentar folha em R$ ${c.complementoFolha.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+      : c.fatorR !== null && c.fatorR >= 0.28
+      ? "Anexo III ✓"
+      : "—";
+    return `${c.razao_social};${c.cnpj};${formatMonth(refDate)};${c.rba12.toFixed(2).replace(".", ",")};${c.folha12.toFixed(2).replace(".", ",")};${fatorRStr};${anexoStr};${complemento};${recomendacao}`;
+  });
+  return "\uFEFF" + [header, ...rows].join("\n");
+};
+
+const downloadCSV = (content: string, filename: string) => {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+function buildClientCalcs(clients: any[], monthlyData: any[]) {
+  return clients.map((client) => {
+    const clientMonths = monthlyData.filter((d) => d.client_id === client.id);
+    const rba12 = clientMonths.reduce((sum, d) => sum + Number(d.faturamento), 0);
+    const folha12 = clientMonths.reduce((sum, d) => sum + Number(d.folha_salarios), 0);
+    const fatorR = rba12 > 0 ? folha12 / rba12 : null;
+
+    let anexo = "Não se aplica";
+    if (fatorR !== null && rba12 > 0) {
+      anexo = fatorR >= 0.28 ? `${fatorR.toFixed(2)} Anexo III` : `${fatorR.toFixed(2)} Anexo V`;
+    }
+
+    let complementoFolha = 0;
+    if (fatorR !== null && fatorR < 0.28 && rba12 > 0) {
+      complementoFolha = rba12 * 0.28 - folha12;
+    }
+
+    return {
+      ...client,
+      rba12,
+      folha12,
+      fatorR,
+      anexo,
+      complementoFolha,
+    };
+  });
+}
+
 const Dashboard = () => {
   const now = new Date();
   const [refDate, setRefDate] = useState(getMonthDate(now));
+  const [filter, setFilter] = useState<FilterType>("all");
 
-  // Period: 12 months ending at refDate - 1 month
-  // Ex: ref 03/2026 → period 03/2025 to 02/2026
   const periodEnd = addMonths(refDate, -1);
   const periodStart = addMonths(refDate, -12);
 
@@ -49,34 +110,7 @@ const Dashboard = () => {
     },
   });
 
-  const clientCalcs = useMemo(() => {
-    return clients.map((client) => {
-      const clientMonths = monthlyData.filter((d) => d.client_id === client.id);
-      const rba12 = clientMonths.reduce((sum, d) => sum + Number(d.faturamento), 0);
-      const folha12 = clientMonths.reduce((sum, d) => sum + Number(d.folha_salarios), 0);
-      const fatorR = rba12 > 0 ? (folha12 / rba12) : null;
-      
-      let anexo = "Não se aplica";
-      if (fatorR !== null && rba12 > 0) {
-        anexo = fatorR >= 0.28 ? `${fatorR.toFixed(2)} Anexo III` : `${fatorR.toFixed(2)} Anexo V`;
-      }
-
-      // Quanto falta para atingir 28%
-      let folhaNecessaria = 0;
-      if (fatorR !== null && fatorR < 0.28 && rba12 > 0) {
-        folhaNecessaria = rba12 * 0.28 - folha12;
-      }
-
-      return {
-        ...client,
-        rba12,
-        folha12,
-        fatorR,
-        anexo,
-        folhaNecessaria,
-      };
-    });
-  }, [clients, monthlyData]);
+  const clientCalcs = useMemo(() => buildClientCalcs(clients, monthlyData), [clients, monthlyData]);
 
   const counts = useMemo(() => {
     const gte28 = clientCalcs.filter((c) => c.fatorR !== null && c.fatorR >= 0.28).length;
@@ -85,8 +119,33 @@ const Dashboard = () => {
     return { gte28, lt28, na };
   }, [clientCalcs]);
 
+  const filteredClients = useMemo(() => {
+    switch (filter) {
+      case "gte28": return clientCalcs.filter((c) => c.fatorR !== null && c.fatorR >= 0.28);
+      case "lt28": return clientCalcs.filter((c) => c.fatorR !== null && c.fatorR < 0.28);
+      case "na": return clientCalcs.filter((c) => c.fatorR === null);
+      default: return clientCalcs;
+    }
+  }, [clientCalcs, filter]);
+
   const formatCNPJ = (cnpj: string) =>
     cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+
+  const handleDownloadSingle = (client: (typeof filteredClients)[0]) => {
+    const csv = generateReportCSV([client], refDate, periodStart, periodEnd);
+    downloadCSV(csv, `relatorio_economia_${client.razao_social.replace(/\s+/g, "_")}_${formatMonth(refDate).replace("/", "_")}.csv`);
+    toast.success(`Relatório gerado para ${client.razao_social}`);
+  };
+
+  const handleDownloadBatch = () => {
+    if (filteredClients.length === 0) {
+      toast.error("Nenhum cliente para exportar.");
+      return;
+    }
+    const csv = generateReportCSV(filteredClients, refDate, periodStart, periodEnd);
+    downloadCSV(csv, `relatorio_economia_lote_${formatMonth(refDate).replace("/", "_")}.csv`);
+    toast.success(`Relatório em lote gerado com ${filteredClients.length} empresa(s)`);
+  };
 
   return (
     <div className="p-8">
@@ -125,20 +184,60 @@ const Dashboard = () => {
         </span>
       </div>
 
-      {/* Summary Cards */}
+      {/* Summary Cards - clickable filters */}
       <div className="grid grid-cols-3 gap-0 mb-8">
-        <div className="bg-accent/15 border border-accent/30 rounded-l-xl p-5">
+        <button
+          onClick={() => setFilter(filter === "gte28" ? "all" : "gte28")}
+          className={`text-left border rounded-l-xl p-5 transition-colors ${
+            filter === "gte28"
+              ? "bg-accent/25 border-accent/50 ring-2 ring-accent/30"
+              : "bg-accent/15 border-accent/30 hover:bg-accent/20"
+          }`}
+        >
           <p className="text-sm font-medium text-foreground mb-1">Empresas ≥ 0,28</p>
           <p className="text-2xl font-bold text-foreground">{counts.gte28}</p>
-        </div>
-        <div className="bg-card border-y border-border p-5">
+        </button>
+        <button
+          onClick={() => setFilter(filter === "lt28" ? "all" : "lt28")}
+          className={`text-left border-y border-r p-5 transition-colors ${
+            filter === "lt28"
+              ? "bg-warning/15 border-warning/30 ring-2 ring-warning/30"
+              : "bg-card border-border hover:bg-muted/30"
+          }`}
+        >
           <p className="text-sm font-medium text-foreground mb-1">Empresas &lt; 0,28</p>
           <p className="text-2xl font-bold text-foreground">{counts.lt28}</p>
-        </div>
-        <div className="bg-card border border-border rounded-r-xl p-5">
+        </button>
+        <button
+          onClick={() => setFilter(filter === "na" ? "all" : "na")}
+          className={`text-left border rounded-r-xl p-5 transition-colors ${
+            filter === "na"
+              ? "bg-muted border-muted-foreground/30 ring-2 ring-muted-foreground/30"
+              : "bg-card border-border hover:bg-muted/30"
+          }`}
+        >
           <p className="text-sm font-medium text-foreground mb-1">Não se aplica</p>
           <p className="text-2xl font-bold text-foreground">{counts.na}</p>
-        </div>
+        </button>
+      </div>
+
+      {/* Batch download */}
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-muted-foreground">
+          {filter !== "all" && (
+            <button onClick={() => setFilter("all")} className="text-primary hover:underline mr-2">
+              Limpar filtro ×
+            </button>
+          )}
+          Exibindo {filteredClients.length} empresa(s)
+        </p>
+        <button
+          onClick={handleDownloadBatch}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Baixar relatório em lote
+        </button>
       </div>
 
       {/* Table */}
@@ -160,11 +259,16 @@ const Dashboard = () => {
                 <div>Fator R</div>
                 <div className="text-xs font-normal text-muted-foreground">RESULTADO</div>
               </th>
+              <th className="px-5 py-3 font-semibold text-foreground">
+                <div>Complemento de Folha</div>
+                <div className="text-xs font-normal text-muted-foreground">PARA 28%</div>
+              </th>
               <th className="px-5 py-3 font-semibold text-foreground">Recomendação</th>
+              <th className="px-5 py-3 font-semibold text-foreground text-center">Relatório</th>
             </tr>
           </thead>
           <tbody>
-            {clientCalcs.map((c) => (
+            {filteredClients.map((c) => (
               <tr key={c.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                 <td className="px-5 py-4">
                   <div className="font-medium text-foreground">{c.razao_social}</div>
@@ -186,10 +290,19 @@ const Dashboard = () => {
                     {c.anexo}
                   </span>
                 </td>
+                <td className="px-5 py-4 text-foreground">
+                  {c.complementoFolha > 0 ? (
+                    <span className="text-warning font-medium">{formatCurrency(c.complementoFolha)}</span>
+                  ) : c.fatorR !== null && c.fatorR >= 0.28 ? (
+                    <span className="text-success text-xs">—</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
                 <td className="px-5 py-4 text-sm">
-                  {c.folhaNecessaria > 0 ? (
+                  {c.complementoFolha > 0 ? (
                     <span className="text-warning">
-                      Aumentar folha em {formatCurrency(c.folhaNecessaria)}
+                      Aumentar folha em {formatCurrency(c.complementoFolha)}
                     </span>
                   ) : c.fatorR !== null && c.fatorR >= 0.28 ? (
                     <span className="text-success">Anexo III ✓</span>
@@ -197,12 +310,21 @@ const Dashboard = () => {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
+                <td className="px-5 py-4 text-center">
+                  <button
+                    onClick={() => handleDownloadSingle(c)}
+                    className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                    title="Gerar relatório de economia"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </button>
+                </td>
               </tr>
             ))}
-            {clientCalcs.length === 0 && (
+            {filteredClients.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-5 py-12 text-center text-muted-foreground">
-                  Nenhum cliente cadastrado
+                <td colSpan={8} className="px-5 py-12 text-center text-muted-foreground">
+                  Nenhum cliente encontrado
                 </td>
               </tr>
             )}
