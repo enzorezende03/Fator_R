@@ -1,145 +1,158 @@
-import FatorRCalculator from "@/components/FatorRCalculator";
+import { useState } from "react";
+import { Download, FileText, Filter, Info, ChevronDown } from "lucide-react";
 
-const infoCards = [
+const empresasData = [
   {
-    title: "O que é o Fator R?",
-    text: "É a razão entre a folha de pagamento e o faturamento bruto dos últimos 12 meses. Esse percentual define em qual anexo do Simples Nacional sua empresa será tributada.",
+    nome: "2M SAUDE – CONTABILIDADE PARA PROFISSIONAIS DA SAUDE LTDA",
+    cnpj: "(41681819000149)",
+    mesRef: "01/2026",
+    rba: "R$ 2.998.198,48",
+    folha: "R$ 0,00",
+    fatorR: "Não se aplica",
+    ultimoPA: "",
   },
   {
-    title: "Regra dos 28%",
-    text: "Se o Fator R for ≥ 28%, a empresa é tributada pelo Anexo III (alíquotas a partir de 6%). Se for < 28%, vai para o Anexo V (a partir de 15,5%).",
+    nome: "A E J SERVICOS DE SAUDE LTDA",
+    cnpj: "(19446793000103)",
+    mesRef: "01/2026",
+    rba: "R$ 943.897,00",
+    folha: "R$ 272.337,92",
+    fatorR: "0.29 Anexo III",
+    ultimoPA: "",
   },
   {
-    title: "Por que importa?",
-    text: "A diferença entre os anexos pode representar uma economia significativa de impostos. O Fator R estimula a formalização da folha de pagamento e o pró-labore.",
+    nome: "ALATERE URGENCIA ODONTOLOGICA 24 HORAS LTDA",
+    cnpj: "(38323669000197)",
+    mesRef: "01/2026",
+    rba: "R$ 68.000,32",
+    folha: "R$ 0,00",
+    fatorR: "Não se aplica",
+    ultimoPA: "",
   },
 ];
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="font-display text-xl text-primary">Fator R</span>
-          <span className="text-xs text-muted-foreground">
-            Simples Nacional
-          </span>
-        </div>
-      </header>
+      {/* Top gradient bar */}
+      <div className="h-2 w-full bg-gradient-to-r from-accent/40 via-accent/20 to-transparent" />
 
-      {/* Hero */}
-      <section className="py-16 md:py-24 px-6">
-        <div className="max-w-3xl mx-auto text-center mb-12">
-          <h1 className="font-display text-4xl md:text-5xl text-foreground mb-4 leading-tight">
-            Calculadora do Fator R
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Descubra se sua empresa será tributada pelo Anexo III ou Anexo V do
-            Simples Nacional.
-          </p>
-        </div>
-
-        <FatorRCalculator />
-      </section>
-
-      {/* Formula */}
-      <section className="py-12 px-6 bg-card border-y border-border">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-display text-2xl text-foreground mb-6">
-            Como é calculado?
-          </h2>
-          <div className="inline-block bg-secondary rounded-2xl px-8 py-6">
-            <p className="text-sm text-muted-foreground mb-2">Fórmula</p>
-            <p className="font-display text-xl md:text-2xl text-foreground">
-              Fator R = (Folha de Salários ÷ Receita Bruta) × 100
-            </p>
-            <p className="text-sm text-muted-foreground mt-3">
-              Ambos referentes aos <strong>últimos 12 meses</strong>
+      <div className="max-w-[1500px] mx-auto px-8 py-8">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+              Fator R
+            </h1>
+            <p className="text-sm text-muted-foreground max-w-2xl">
+              O fator R é o cálculo utilizado para determinar em qual Anexo do regime tributário Simples Nacional uma empresa se enquadra.
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Info Cards */}
-      <section className="py-16 px-6">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6">
-          {infoCards.map((card) => (
-            <div
-              key={card.title}
-              className="bg-card rounded-2xl border border-border p-6 hover:shadow-md transition-shadow"
-            >
-              <h3 className="font-display text-lg text-foreground mb-3">
-                {card.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {card.text}
-              </p>
+          <div className="flex items-center gap-2 border-2 border-primary rounded-full px-5 py-3 text-sm shrink-0">
+            <Info className="w-4 h-4 text-primary" />
+            <div className="text-right">
+              <p className="font-semibold text-foreground">Período de atualização mensal</p>
+              <p className="text-muted-foreground">Entre os dias 10 e 15 de cada mês</p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Comparison table */}
-      <section className="py-12 px-6 bg-card border-y border-border">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-display text-2xl text-foreground mb-6 text-center">
-            Anexo III vs Anexo V
-          </h2>
-          <div className="rounded-xl border border-border overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-secondary">
-                  <th className="text-left px-6 py-3 font-semibold text-foreground">
-                    Critério
-                  </th>
-                  <th className="text-center px-6 py-3 font-semibold text-success">
-                    Anexo III
-                  </th>
-                  <th className="text-center px-6 py-3 font-semibold text-warning">
-                    Anexo V
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-border">
-                  <td className="px-6 py-3 text-muted-foreground">Fator R</td>
-                  <td className="px-6 py-3 text-center font-medium">≥ 28%</td>
-                  <td className="px-6 py-3 text-center font-medium">{"< 28%"}</td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="px-6 py-3 text-muted-foreground">
-                    Alíquota inicial
-                  </td>
-                  <td className="px-6 py-3 text-center font-medium text-success">
-                    6%
-                  </td>
-                  <td className="px-6 py-3 text-center font-medium text-warning">
-                    15,5%
-                  </td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="px-6 py-3 text-muted-foreground">Vantagem</td>
-                  <td className="px-6 py-3 text-center text-success font-medium">
-                    Mais econômico
-                  </td>
-                  <td className="px-6 py-3 text-center text-warning font-medium">
-                    Mais caro
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="py-8 px-6 text-center text-xs text-muted-foreground">
-        <p>
-          Esta calculadora é apenas para fins informativos. Consulte seu
-          contador para orientação fiscal.
-        </p>
-      </footer>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-0 mb-8">
+          <div className="bg-accent/15 border border-accent/30 rounded-l-xl p-5">
+            <p className="text-sm font-medium text-foreground mb-1">
+              Empresas igual ou maior que 0,28%
+            </p>
+            <p className="text-2xl font-bold text-foreground">134</p>
+          </div>
+          <div className="bg-card border-y border-border p-5">
+            <p className="text-sm font-medium text-foreground mb-1">
+              Empresas menor que 0,28%
+            </p>
+            <p className="text-2xl font-bold text-foreground">3</p>
+          </div>
+          <div className="bg-card border border-border rounded-r-xl p-5">
+            <p className="text-sm font-medium text-foreground mb-1">
+              Empresas que não se aplica
+            </p>
+            <p className="text-2xl font-bold text-foreground">48</p>
+          </div>
+        </div>
+
+        {/* Actions Row */}
+        <div className="flex items-center justify-between mb-6">
+          <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-secondary transition-colors">
+            Adicionar filtro
+            <ChevronDown className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
+              <Download className="w-4 h-4" />
+              Baixar Todos
+            </button>
+            <button className="flex items-center gap-2 border border-primary text-primary px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors">
+              <FileText className="w-4 h-4" />
+              Exportar Todos
+            </button>
+          </div>
+        </div>
+
+        <hr className="border-border mb-6" />
+
+        {/* Table */}
+        <div className="w-full">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left">
+                <th className="pb-4 pr-4 font-semibold text-foreground">Empresa</th>
+                <th className="pb-4 px-4 font-semibold text-foreground">Mês de ref.</th>
+                <th className="pb-4 px-4 font-semibold text-foreground">
+                  <div>RBA</div>
+                  <div className="text-xs font-normal text-muted-foreground">12 MESES</div>
+                </th>
+                <th className="pb-4 px-4 font-semibold text-foreground">
+                  <div>Folha</div>
+                  <div className="text-xs font-normal text-muted-foreground">11 MESES</div>
+                </th>
+                <th className="pb-4 px-4 font-semibold text-foreground">
+                  <div>Fator R</div>
+                  <div className="text-xs font-normal text-muted-foreground">ÚLTIMO MÊS</div>
+                </th>
+                <th className="pb-4 px-4 font-semibold text-foreground">
+                  <div>Último PA</div>
+                  <div className="text-xs font-normal text-muted-foreground">DECLARAÇÕES</div>
+                </th>
+                <th className="pb-4 pl-4 font-semibold text-foreground">Calcular</th>
+              </tr>
+            </thead>
+            <tbody>
+              {empresasData.map((empresa, index) => (
+                <tr key={index} className="border-t border-border">
+                  <td className="py-5 pr-4">
+                    <div className="font-medium text-foreground text-sm">{empresa.nome}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{empresa.cnpj}</div>
+                  </td>
+                  <td className="py-5 px-4 text-foreground">{empresa.mesRef}</td>
+                  <td className="py-5 px-4 text-foreground">{empresa.rba}</td>
+                  <td className="py-5 px-4 text-foreground">{empresa.folha}</td>
+                  <td className="py-5 px-4 text-foreground">{empresa.fatorR}</td>
+                  <td className="py-5 px-4 text-foreground">{empresa.ultimoPA}</td>
+                  <td className="py-5 pl-4">
+                    <div className="flex items-center gap-2">
+                      <button className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity">
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button className="w-10 h-10 rounded-lg border border-border text-muted-foreground flex items-center justify-center hover:bg-secondary transition-colors">
+                        <FileText className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
