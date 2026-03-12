@@ -391,11 +391,19 @@ const Abatimento = () => {
                   </span>
                 </div>
               )}
-              {totalRba > 0 && aliquotaEfetiva !== null && (
+              {totalRba > 0 && aliquotaAnexoIII !== null && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Alíquota Efetiva</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {aliquotaEfetiva.toFixed(2).replace(".", ",")}%
+                  <p className="text-xs text-muted-foreground">Alíquota Anexo III</p>
+                  <p className={`text-2xl font-bold ${isAnexoIII ? "text-success" : "text-muted-foreground"}`}>
+                    {aliquotaAnexoIII.toFixed(2).replace(".", ",")}%
+                  </p>
+                </div>
+              )}
+              {totalRba > 0 && aliquotaAnexoV !== null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Alíquota Anexo V</p>
+                  <p className={`text-2xl font-bold ${!isAnexoIII ? "text-warning" : "text-muted-foreground"}`}>
+                    {aliquotaAnexoV.toFixed(2).replace(".", ",")}%
                   </p>
                 </div>
               )}
