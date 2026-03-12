@@ -253,7 +253,7 @@ const Clientes = () => {
             <div className="col-span-2">
               <label className="inline-flex items-center gap-2 border border-dashed border-primary/50 text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors">
                 <FileText className="w-4 h-4" />
-                {importingPdf ? "Importando..." : pgdasData ? "✓ Abatimento importado" : "Importar Abatimento (PGDAS-D)"}
+                {importingPdf ? "Importando..." : pgdasData ? "✓ Extrato importado" : "Importar Último Extrato do Simples"}
                 <input
                   type="file"
                   accept=".pdf"
