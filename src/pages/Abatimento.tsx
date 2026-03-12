@@ -58,7 +58,7 @@ const Abatimento = () => {
     },
   });
 
-  const { data: monthlyData = [] } = useQuery({
+  const { data: monthlyData } = useQuery({
     queryKey: ["monthly_data_abatimento", selectedClientId, periodStart.toISOString(), periodEnd.toISOString()],
     queryFn: async () => {
       if (!selectedClientId) return [];
@@ -74,10 +74,11 @@ const Abatimento = () => {
     enabled: !!selectedClientId,
   });
 
+  const monthlyRows = useMemo(() => monthlyData ?? [], [monthlyData]);
+
   // Local state for form values
   const [folhaValues, setFolhaValues] = useState<Record<string, string>>({});
   const [rbaValues, setRbaValues] = useState<Record<string, string>>({});
-  const [initialized, setInitialized] = useState(false);
 
   // Initialize from DB data
   useEffect(() => {
@@ -86,34 +87,57 @@ const Abatimento = () => {
     const rba: Record<string, string> = {};
     months.forEach((m) => {
       const key = toISODate(m);
-      const existing = monthlyData.find((d) => d.mes_referencia === key);
+      const existing = monthlyRows.find((d) => d.mes_referencia === key);
       folha[key] = existing ? formatBRL(Number(existing.folha_salarios)) : "";
       rba[key] = existing ? formatBRL(Number(existing.faturamento)) : "";
     });
     setFolhaValues(folha);
     setRbaValues(rba);
-    setInitialized(true);
-  }, [monthlyData, selectedClientId]);
+  }, [monthlyRows, months, selectedClientId]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!selectedClientId || !user) return;
 
-      const upserts = months.map((m) => {
+      type MonthlyPayload = {
+        client_id: string;
+        mes_referencia: string;
+        folha_salarios: number;
+        faturamento: number;
+        created_by: string;
+      };
+
+      const updates: Array<MonthlyPayload & { id: string }> = [];
+      const inserts: MonthlyPayload[] = [];
+
+      months.forEach((m) => {
         const key = toISODate(m);
-        const existing = monthlyData.find((d) => d.mes_referencia === key);
-        return {
-          ...(existing ? { id: existing.id } : {}),
+        const existing = monthlyRows.find((d) => d.mes_referencia === key);
+
+        const payload: MonthlyPayload = {
           client_id: selectedClientId,
           mes_referencia: key,
           folha_salarios: parseBRL(folhaValues[key] || "0"),
           faturamento: parseBRL(rbaValues[key] || "0"),
           created_by: user.id,
         };
+
+        if (existing) {
+          updates.push({ id: existing.id, ...payload });
+        } else {
+          inserts.push(payload);
+        }
       });
 
-      const { error } = await supabase.from("monthly_data").upsert(upserts, { onConflict: "id" });
-      if (error) throw error;
+      if (updates.length > 0) {
+        const { error } = await supabase.from("monthly_data").upsert(updates, { onConflict: "id" });
+        if (error) throw error;
+      }
+
+      if (inserts.length > 0) {
+        const { error } = await supabase.from("monthly_data").insert(inserts);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monthly_data_abatimento"] });
