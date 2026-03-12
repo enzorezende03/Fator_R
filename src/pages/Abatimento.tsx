@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -76,7 +76,7 @@ const Abatimento = () => {
   const [initialized, setInitialized] = useState(false);
 
   // Initialize from DB data
-  useMemo(() => {
+  useEffect(() => {
     if (!selectedClientId) return;
     const folha: Record<string, string> = {};
     const rba: Record<string, string> = {};
@@ -89,7 +89,7 @@ const Abatimento = () => {
     setFolhaValues(folha);
     setRbaValues(rba);
     setInitialized(true);
-  }, [monthlyData, selectedClientId, months]);
+  }, [monthlyData, selectedClientId]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
