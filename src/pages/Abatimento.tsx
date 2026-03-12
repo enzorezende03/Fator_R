@@ -181,15 +181,15 @@ const Abatimento = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted-foreground">Período:</span>
+          <span className="text-sm font-medium text-muted-foreground">Competência:</span>
           <button
             onClick={() => setRefDate(addMonths(refDate, -1))}
             className="p-2 rounded-lg border border-border hover:bg-secondary transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="font-semibold text-foreground min-w-[160px] text-center text-sm">
-            {formatMonth(periodStart)} a {formatMonth(periodEnd)}
+          <span className="font-semibold text-foreground min-w-[100px] text-center text-sm">
+            {formatMonth(addMonths(refDate, 1))}
           </span>
           <button
             onClick={() => setRefDate(addMonths(refDate, 1))}
