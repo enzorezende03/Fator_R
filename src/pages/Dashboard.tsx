@@ -98,13 +98,6 @@ const Dashboard = () => {
             O fator R é o cálculo utilizado para determinar em qual Anexo do regime tributário Simples Nacional uma empresa se enquadra.
           </p>
         </div>
-        <div className="flex items-center gap-2 border-2 border-primary rounded-full px-5 py-3 text-sm shrink-0">
-          <Info className="w-4 h-4 text-primary" />
-          <div className="text-right">
-            <p className="font-semibold text-foreground">Período de atualização mensal</p>
-            <p className="text-muted-foreground">Entre os dias 10 e 15 de cada mês</p>
-          </div>
-        </div>
       </div>
 
       {/* Month selector */}
