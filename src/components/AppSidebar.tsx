@@ -28,6 +28,19 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user!.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
   const navigate = useNavigate();
 
   const handleLogout = async () => {
