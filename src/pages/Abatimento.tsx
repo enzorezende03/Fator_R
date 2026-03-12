@@ -156,7 +156,8 @@ const Abatimento = () => {
   const totalRba = months.reduce((sum, m) => sum + parseBRL(rbaValues[toISODate(m)] || "0"), 0);
   const fatorR = totalRba > 0 ? totalFolha / totalRba : 0;
   const isAnexoIII = fatorR >= 0.28;
-  const aliquotaEfetiva = totalRba > 0 ? calcularAliquotaEfetiva(totalRba, isAnexoIII) : null;
+  const aliquotaAnexoIII = totalRba > 0 ? calcularAliquotaEfetiva(totalRba, true) : null;
+  const aliquotaAnexoV = totalRba > 0 ? calcularAliquotaEfetiva(totalRba, false) : null;
 
   return (
     <div className="p-8">
@@ -390,11 +391,19 @@ const Abatimento = () => {
                   </span>
                 </div>
               )}
-              {totalRba > 0 && aliquotaEfetiva !== null && (
+              {totalRba > 0 && aliquotaAnexoIII !== null && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Alíquota Efetiva</p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {aliquotaEfetiva.toFixed(2).replace(".", ",")}%
+                  <p className="text-xs text-muted-foreground">Alíquota Anexo III</p>
+                  <p className={`text-2xl font-bold ${isAnexoIII ? "text-success" : "text-muted-foreground"}`}>
+                    {aliquotaAnexoIII.toFixed(2).replace(".", ",")}%
+                  </p>
+                </div>
+              )}
+              {totalRba > 0 && aliquotaAnexoV !== null && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Alíquota Anexo V</p>
+                  <p className={`text-2xl font-bold ${!isAnexoIII ? "text-warning" : "text-muted-foreground"}`}>
+                    {aliquotaAnexoV.toFixed(2).replace(".", ",")}%
                   </p>
                 </div>
               )}
