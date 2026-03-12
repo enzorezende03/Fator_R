@@ -2,6 +2,8 @@ import { LayoutDashboard, Calculator, Users, TrendingUp, LogOut, ShieldCheck, Fi
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +28,19 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut, user } = useAuth();
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user!.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -69,7 +84,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && user && (
           <p className="text-xs text-sidebar-foreground/50 truncate mb-2 px-1">
-            {user.email}
+            {profile?.display_name || user.email}
           </p>
         )}
         <button
