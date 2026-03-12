@@ -1,0 +1,281 @@
+import { useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+const formatMonth = (date: Date) => {
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${m}/${y}`;
+};
+
+const getMonthDate = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), 1);
+
+const addMonths = (date: Date, months: number) =>
+  new Date(date.getFullYear(), date.getMonth() + months, 1);
+
+const toISODate = (date: Date) => date.toISOString().split("T")[0];
+
+const parseBRL = (value: string) => {
+  const cleaned = value.replace(/\./g, "").replace(",", ".");
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+};
+
+const formatBRL = (value: number) => {
+  if (value === 0) return "";
+  return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const Abatimento = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const now = new Date();
+  const [refDate, setRefDate] = useState(getMonthDate(now));
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  // 12 months: from refDate-11 to refDate
+  const months = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => addMonths(refDate, i - 11));
+  }, [refDate]);
+
+  const periodStart = months[0];
+  const periodEnd = months[11];
+
+  const { data: clients = [] } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clients").select("*").order("razao_social");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: monthlyData = [] } = useQuery({
+    queryKey: ["monthly_data_abatimento", selectedClientId, periodStart.toISOString(), periodEnd.toISOString()],
+    queryFn: async () => {
+      if (!selectedClientId) return [];
+      const { data, error } = await supabase
+        .from("monthly_data")
+        .select("*")
+        .eq("client_id", selectedClientId)
+        .gte("mes_referencia", toISODate(periodStart))
+        .lte("mes_referencia", toISODate(periodEnd));
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedClientId,
+  });
+
+  // Local state for form values
+  const [folhaValues, setFolhaValues] = useState<Record<string, string>>({});
+  const [rbaValues, setRbaValues] = useState<Record<string, string>>({});
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize from DB data
+  useMemo(() => {
+    if (!selectedClientId) return;
+    const folha: Record<string, string> = {};
+    const rba: Record<string, string> = {};
+    months.forEach((m) => {
+      const key = toISODate(m);
+      const existing = monthlyData.find((d) => d.mes_referencia === key);
+      folha[key] = existing ? formatBRL(Number(existing.folha_salarios)) : "";
+      rba[key] = existing ? formatBRL(Number(existing.faturamento)) : "";
+    });
+    setFolhaValues(folha);
+    setRbaValues(rba);
+    setInitialized(true);
+  }, [monthlyData, selectedClientId, months]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedClientId || !user) return;
+
+      const upserts = months.map((m) => {
+        const key = toISODate(m);
+        const existing = monthlyData.find((d) => d.mes_referencia === key);
+        return {
+          ...(existing ? { id: existing.id } : {}),
+          client_id: selectedClientId,
+          mes_referencia: key,
+          folha_salarios: parseBRL(folhaValues[key] || "0"),
+          faturamento: parseBRL(rbaValues[key] || "0"),
+          created_by: user.id,
+        };
+      });
+
+      const { error } = await supabase.from("monthly_data").upsert(upserts, { onConflict: "id" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["monthly_data_abatimento"] });
+      queryClient.invalidateQueries({ queryKey: ["monthly_data"] });
+      toast.success("Dados salvos com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao salvar dados");
+    },
+  });
+
+  const totalFolha = months.reduce((sum, m) => sum + parseBRL(folhaValues[toISODate(m)] || "0"), 0);
+  const totalRba = months.reduce((sum, m) => sum + parseBRL(rbaValues[toISODate(m)] || "0"), 0);
+  const fatorR = totalRba > 0 ? totalFolha / totalRba : 0;
+
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="font-display text-3xl font-bold text-foreground mb-2">Abatimento</h1>
+        <p className="text-sm text-muted-foreground">
+          Preencha os valores de Folha de Salários e RBA (Receita Bruta Acumulada) dos últimos 12 meses.
+        </p>
+      </div>
+
+      {/* Client selector + month navigator */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        <div className="flex-1 min-w-[250px]">
+          <label className="block text-sm font-medium text-muted-foreground mb-1">Cliente</label>
+          <select
+            value={selectedClientId || ""}
+            onChange={(e) => {
+              setSelectedClientId(e.target.value || null);
+              setInitialized(false);
+            }}
+            className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+          >
+            <option value="">Selecione um cliente...</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>{c.razao_social}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Período:</span>
+          <button
+            onClick={() => setRefDate(addMonths(refDate, -1))}
+            className="p-2 rounded-lg border border-border hover:bg-secondary transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="font-semibold text-foreground min-w-[160px] text-center text-sm">
+            {formatMonth(periodStart)} a {formatMonth(periodEnd)}
+          </span>
+          <button
+            onClick={() => setRefDate(addMonths(refDate, 1))}
+            className="p-2 rounded-lg border border-border hover:bg-secondary transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {selectedClientId && (
+        <>
+          {/* Folha de Salários */}
+          <div className="bg-card rounded-xl border border-border p-6 mb-6">
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">Folha de Salários</h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Folha de Salários, incluídos encargos (até 12 meses anteriores ao Período de Apuração) (R$):
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {months.map((m) => {
+                const key = toISODate(m);
+                return (
+                  <div key={`folha-${key}`}>
+                    <label className="block text-sm font-bold text-foreground mb-1">
+                      {formatMonth(m)}
+                    </label>
+                    <input
+                      type="text"
+                      value={folhaValues[key] || ""}
+                      onChange={(e) => setFolhaValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                      onBlur={(e) => {
+                        const num = parseBRL(e.target.value);
+                        setFolhaValues((prev) => ({ ...prev, [key]: num > 0 ? formatBRL(num) : "" }));
+                      }}
+                      placeholder="0,00"
+                      className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 text-right text-sm font-semibold text-foreground">
+              Total: R$ {formatBRL(totalFolha) || "0,00"}
+            </div>
+          </div>
+
+          {/* RBA */}
+          <div className="bg-card rounded-xl border border-border p-6 mb-6">
+            <h2 className="font-display text-lg font-bold text-foreground mb-1">RBA - Receita Bruta Acumulada</h2>
+            <p className="text-xs text-muted-foreground mb-4">
+              Receita Bruta Acumulada dos últimos 12 meses anteriores ao Período de Apuração (R$):
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {months.map((m) => {
+                const key = toISODate(m);
+                return (
+                  <div key={`rba-${key}`}>
+                    <label className="block text-sm font-bold text-foreground mb-1">
+                      {formatMonth(m)}
+                    </label>
+                    <input
+                      type="text"
+                      value={rbaValues[key] || ""}
+                      onChange={(e) => setRbaValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                      onBlur={(e) => {
+                        const num = parseBRL(e.target.value);
+                        setRbaValues((prev) => ({ ...prev, [key]: num > 0 ? formatBRL(num) : "" }));
+                      }}
+                      placeholder="0,00"
+                      className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 text-right text-sm font-semibold text-foreground">
+              Total: R$ {formatBRL(totalRba) || "0,00"}
+            </div>
+          </div>
+
+          {/* Summary + Save */}
+          <div className="flex items-center justify-between bg-card rounded-xl border border-border p-6">
+            <div className="flex items-center gap-8">
+              <div>
+                <p className="text-xs text-muted-foreground">Fator R</p>
+                <p className={`text-2xl font-bold ${fatorR >= 0.28 ? "text-success" : totalRba > 0 ? "text-warning" : "text-muted-foreground"}`}>
+                  {totalRba > 0 ? `${(fatorR * 100).toFixed(2)}%` : "—"}
+                </p>
+              </div>
+              {totalRba > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Enquadramento</p>
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                    fatorR >= 0.28 ? "bg-success/15 text-success" : "bg-warning/15 text-warning"
+                  }`}>
+                    {fatorR >= 0.28 ? "Anexo III" : "Anexo V"}
+                  </span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              {saveMutation.isPending ? "Salvando..." : "Salvar Dados"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default Abatimento;
