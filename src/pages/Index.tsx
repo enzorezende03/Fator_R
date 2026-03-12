@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Download, FileText, Filter, Info, ChevronDown } from "lucide-react";
+import { Download, FileText, Filter, Info, ChevronDown, Calculator } from "lucide-react";
+import FatorRCalculator from "@/components/FatorRCalculator";
 
 const empresasData = [
   {
@@ -151,6 +152,13 @@ const Index = () => {
               ))}
             </tbody>
           </table>
+        </div>
+        {/* Calculadora do Fator R */}
+        <div className="mt-12 mb-8">
+          <h2 className="font-display text-2xl font-bold text-foreground mb-6">
+            Calculadora do Fator R
+          </h2>
+          <FatorRCalculator />
         </div>
       </div>
     </div>
