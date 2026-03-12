@@ -41,13 +41,13 @@ export const parseCartaFaturamento = async (file: File): Promise<CartaFaturament
   const cnpjMatch = fullText.match(/CNPJ\s*:\s*([\d.\/\-]+)/i);
   const cnpj = cnpjMatch ? cnpjMatch[1].replace(/\D/g, "") : "";
 
-  // Extract rows: "MêsNome/Ano  salário  faturamento ..."
-  // Pattern: month name / year followed by BRL values
+  // Extract rows: "MêsNome/Ano  Salário12m  Faturamento12m  MédiaAnexoIII  Fat12mAnexoIII"
+  // The PDF has 4 numeric columns per row. We want columns 1 (Salário 12 meses) and 2 (Faturamento 12 meses).
   const rows: CartaFaturamentoRow[] = [];
 
-  // Match lines like "Janeiro/2025 21.900,95 80.909,00 ..."
+  // Match month/year followed by 4 BRL values (we capture the first two)
   const regex = new RegExp(
-    `(${Object.keys(monthNames).join("|")})\s*/\s*(\\d{4})\\s+([\\d.,]+)\\s+([\\d.,]+)`,
+    `(${Object.keys(monthNames).join("|")})\\s*/\\s*(\\d{4})\\s+([\\d.,]+)\\s+([\\d.,]+)\\s+([\\d.,]+)\\s+([\\d.,]+)`,
     "gi"
   );
 
@@ -58,6 +58,8 @@ export const parseCartaFaturamento = async (file: File): Promise<CartaFaturament
     const month = monthNames[monthName];
     if (!month) continue;
 
+    // Column 1: Salário 12 meses → folhaSalarios
+    // Column 2: Faturamento 12 meses → faturamento
     const folhaSalarios = parseBRValue(match[3]);
     const faturamento = parseBRValue(match[4]);
 
