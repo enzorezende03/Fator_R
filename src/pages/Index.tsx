@@ -153,6 +153,13 @@ const Index = () => {
             </tbody>
           </table>
         </div>
+        {/* Calculadora do Fator R */}
+        <div className="mt-12 mb-8">
+          <h2 className="font-display text-2xl font-bold text-foreground mb-6">
+            Calculadora do Fator R
+          </h2>
+          <FatorRCalculator />
+        </div>
       </div>
     </div>
   );
