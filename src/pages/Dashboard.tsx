@@ -242,42 +242,52 @@ const Dashboard = () => {
 
       {/* Table */}
       <div className="w-full rounded-xl border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm table-fixed">
+          <colgroup>
+            <col className="w-[20%]" />
+            <col className="w-[8%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[10%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[6%]" />
+          </colgroup>
           <thead>
             <tr className="bg-secondary text-left">
-              <th className="px-5 py-3 font-semibold text-foreground">Empresa</th>
-              <th className="px-5 py-3 font-semibold text-foreground">Mês de ref.</th>
-              <th className="px-5 py-3 font-semibold text-foreground">
+              <th className="px-4 py-3 font-semibold text-foreground">Empresa</th>
+              <th className="px-4 py-3 font-semibold text-foreground">Mês ref.</th>
+              <th className="px-4 py-3 font-semibold text-foreground text-right">
                 <div>RBA</div>
                 <div className="text-xs font-normal text-muted-foreground">12 MESES</div>
               </th>
-              <th className="px-5 py-3 font-semibold text-foreground">
+              <th className="px-4 py-3 font-semibold text-foreground text-right">
                 <div>Folha</div>
                 <div className="text-xs font-normal text-muted-foreground">12 MESES</div>
               </th>
-              <th className="px-5 py-3 font-semibold text-foreground">
+              <th className="px-4 py-3 font-semibold text-foreground text-center">
                 <div>Fator R</div>
                 <div className="text-xs font-normal text-muted-foreground">RESULTADO</div>
               </th>
-              <th className="px-5 py-3 font-semibold text-foreground">
-                <div>Complemento de Folha</div>
+              <th className="px-4 py-3 font-semibold text-foreground text-right">
+                <div>Compl. Folha</div>
                 <div className="text-xs font-normal text-muted-foreground">PARA 28%</div>
               </th>
-              <th className="px-5 py-3 font-semibold text-foreground">Recomendação</th>
-              <th className="px-5 py-3 font-semibold text-foreground text-center">Relatório</th>
+              <th className="px-4 py-3 font-semibold text-foreground">Recomendação</th>
+              <th className="px-4 py-3 font-semibold text-foreground text-center">Rel.</th>
             </tr>
           </thead>
           <tbody>
             {filteredClients.map((c) => (
               <tr key={c.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                <td className="px-5 py-4">
-                  <div className="font-medium text-foreground">{c.razao_social}</div>
+                <td className="px-4 py-4">
+                  <div className="font-medium text-foreground truncate">{c.razao_social}</div>
                   <div className="text-xs text-muted-foreground">{formatCNPJ(c.cnpj)}</div>
                 </td>
-                <td className="px-5 py-4 text-foreground">{formatMonth(refDate)}</td>
-                <td className="px-5 py-4 text-foreground">{formatCurrency(c.rba12)}</td>
-                <td className="px-5 py-4 text-foreground">{formatCurrency(c.folha12)}</td>
-                <td className="px-5 py-4">
+                <td className="px-4 py-4 text-foreground">{formatMonth(refDate)}</td>
+                <td className="px-4 py-4 text-foreground text-right">{formatCurrency(c.rba12)}</td>
+                <td className="px-4 py-4 text-foreground text-right">{formatCurrency(c.folha12)}</td>
+                <td className="px-4 py-4 text-center">
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
                       c.fatorR === null
@@ -290,7 +300,7 @@ const Dashboard = () => {
                     {c.anexo}
                   </span>
                 </td>
-                <td className="px-5 py-4 text-foreground">
+                <td className="px-4 py-4 text-right">
                   {c.complementoFolha > 0 ? (
                     <span className="text-warning font-medium">{formatCurrency(c.complementoFolha)}</span>
                   ) : c.fatorR !== null && c.fatorR >= 0.28 ? (
@@ -299,7 +309,7 @@ const Dashboard = () => {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-5 py-4 text-sm">
+                <td className="px-4 py-4 text-sm truncate">
                   {c.complementoFolha > 0 ? (
                     <span className="text-warning">
                       Aumentar folha em {formatCurrency(c.complementoFolha)}
@@ -310,7 +320,7 @@ const Dashboard = () => {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-5 py-4 text-center">
+                <td className="px-4 py-4 text-center">
                   <button
                     onClick={() => handleDownloadSingle(c)}
                     className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
@@ -323,7 +333,7 @@ const Dashboard = () => {
             ))}
             {filteredClients.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-5 py-12 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
                   Nenhum cliente encontrado
                 </td>
               </tr>
