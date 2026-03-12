@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Save, ChevronLeft, ChevronRight, ChevronsUpDown, Check, Upload } from "lucide-react";
 import { parseCartaFaturamento } from "@/lib/parseCartaFaturamento";
+import { calcularAliquotaEfetiva } from "@/lib/aliquotaEfetiva";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -154,6 +155,8 @@ const Abatimento = () => {
   const totalFolha = months.reduce((sum, m) => sum + parseBRL(folhaValues[toISODate(m)] || "0"), 0);
   const totalRba = months.reduce((sum, m) => sum + parseBRL(rbaValues[toISODate(m)] || "0"), 0);
   const fatorR = totalRba > 0 ? totalFolha / totalRba : 0;
+  const isAnexoIII = fatorR >= 0.28;
+  const aliquotaEfetiva = totalRba > 0 ? calcularAliquotaEfetiva(totalRba, isAnexoIII) : null;
 
   return (
     <div className="p-8">
@@ -387,11 +390,11 @@ const Abatimento = () => {
                   </span>
                 </div>
               )}
-              {totalRba > 0 && (
+              {totalRba > 0 && aliquotaEfetiva !== null && (
                 <div>
                   <p className="text-xs text-muted-foreground">Alíquota Efetiva</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {fatorR >= 0.28 ? "6,00%" : "15,50%"}
+                    {aliquotaEfetiva.toFixed(2).replace(".", ",")}%
                   </p>
                 </div>
               )}
