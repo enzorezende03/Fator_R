@@ -84,7 +84,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && user && (
           <p className="text-xs text-sidebar-foreground/50 truncate mb-2 px-1">
-            {user.email}
+            {profile?.display_name || user.email}
           </p>
         )}
         <button
