@@ -190,7 +190,6 @@ const Abatimento = () => {
                         value={c.razao_social}
                         onSelect={() => {
                           setSelectedClientId(c.id === selectedClientId ? null : c.id);
-                          setInitialized(false);
                         }}
                       >
                         <Check className={cn("mr-2 h-4 w-4", selectedClientId === c.id ? "opacity-100" : "opacity-0")} />
