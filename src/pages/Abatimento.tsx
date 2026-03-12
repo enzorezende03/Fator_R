@@ -76,18 +76,8 @@ const Abatimento = () => {
   const [initialized, setInitialized] = useState(false);
 
   // Initialize from DB data
-  const monthlyDataKey = JSON.stringify(monthlyData.map(d => d.id).sort());
-  useState(() => { /* only for tracking */ });
-  
-  useMemo(() => {
-    // This is intentionally empty - initialization happens in the effect below
-  }, []);
-
-  // Use useEffect instead of useMemo to avoid setState during render
-  const [prevDataKey, setPrevDataKey] = useState("");
-  const currentDataKey = `${selectedClientId}-${monthlyDataKey}`;
-  
-  if (selectedClientId && currentDataKey !== prevDataKey) {
+  useEffect(() => {
+    if (!selectedClientId) return;
     const folha: Record<string, string> = {};
     const rba: Record<string, string> = {};
     months.forEach((m) => {
@@ -96,11 +86,10 @@ const Abatimento = () => {
       folha[key] = existing ? formatBRL(Number(existing.folha_salarios)) : "";
       rba[key] = existing ? formatBRL(Number(existing.faturamento)) : "";
     });
-    setPrevDataKey(currentDataKey);
     setFolhaValues(folha);
     setRbaValues(rba);
     setInitialized(true);
-  }
+  }, [monthlyData, selectedClientId]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
