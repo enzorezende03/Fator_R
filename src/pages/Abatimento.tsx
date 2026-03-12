@@ -198,6 +198,47 @@ const Abatimento = () => {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+
+        {selectedClientId && (
+          <label className="flex items-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors whitespace-nowrap">
+            <Upload className="w-4 h-4" />
+            Importar Carta de Faturamento
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const data = await parseCartaFaturamento(file);
+                  if (data.rows.length === 0) {
+                    toast.error("Nenhum dado encontrado no PDF.");
+                    return;
+                  }
+                  const newFolha = { ...folhaValues };
+                  const newRba = { ...rbaValues };
+                  let filled = 0;
+                  data.rows.forEach((row) => {
+                    if (newFolha.hasOwnProperty(row.mesReferencia)) {
+                      newFolha[row.mesReferencia] = row.folhaSalarios > 0 ? formatBRL(row.folhaSalarios) : "";
+                      newRba[row.mesReferencia] = row.faturamento > 0 ? formatBRL(row.faturamento) : "";
+                      filled++;
+                    }
+                  });
+                  setFolhaValues(newFolha);
+                  setRbaValues(newRba);
+                  toast.success(`${filled} mês(es) importado(s) com sucesso!`);
+                } catch (err) {
+                  console.error(err);
+                  toast.error("Erro ao ler o PDF.");
+                } finally {
+                  e.target.value = "";
+                }
+              }}
+            />
+          </label>
+        )}
       </div>
 
       {selectedClientId && (
