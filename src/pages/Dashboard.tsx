@@ -147,9 +147,9 @@ const Dashboard = () => {
   const formatCNPJ = (cnpj: string) =>
     cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 
-  const handleDownloadSingle = (client: (typeof filteredClients)[0]) => {
+  const handleDownloadSingle = async (client: (typeof filteredClients)[0]) => {
     const reportData = buildReportData(client, monthlyData, refDate, periodEnd);
-    const doc = generateReportPdf(reportData);
+    const doc = await generateReportPdf(reportData);
     doc.save(`relatorio_fator_r_${client.razao_social.replace(/\s+/g, "_")}_${formatMonth(refDate).replace("/", "_")}.pdf`);
     toast.success(`Relatório PDF gerado para ${client.razao_social}`);
   };
