@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -84,6 +85,7 @@ const Dashboard = () => {
   const now = new Date();
   const [refDate, setRefDate] = useState(getMonthDate(now));
   const [filter, setFilter] = useState<FilterType>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const periodEnd = addMonths(refDate, -1);
   const periodStart = addMonths(refDate, -12);
@@ -128,6 +130,26 @@ const Dashboard = () => {
     }
   }, [clientCalcs, filter]);
 
+  const allSelected = filteredClients.length > 0 && filteredClients.every((c) => selectedIds.has(c.id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredClients.map((c) => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const formatCNPJ = (cnpj: string) =>
     cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 
@@ -138,13 +160,17 @@ const Dashboard = () => {
   };
 
   const handleDownloadBatch = () => {
-    if (filteredClients.length === 0) {
-      toast.error("Nenhum cliente para exportar.");
+    const toExport = someSelected
+      ? filteredClients.filter((c) => selectedIds.has(c.id))
+      : filteredClients;
+
+    if (toExport.length === 0) {
+      toast.error("Nenhum cliente selecionado para exportar.");
       return;
     }
-    const csv = generateReportCSV(filteredClients, refDate, periodStart, periodEnd);
+    const csv = generateReportCSV(toExport, refDate, periodStart, periodEnd);
     downloadCSV(csv, `relatorio_economia_lote_${formatMonth(refDate).replace("/", "_")}.csv`);
-    toast.success(`Relatório em lote gerado com ${filteredClients.length} empresa(s)`);
+    toast.success(`Relatório em lote gerado com ${toExport.length} empresa(s)`);
   };
 
   return (
@@ -230,13 +256,20 @@ const Dashboard = () => {
             </button>
           )}
           Exibindo {filteredClients.length} empresa(s)
+          {someSelected && (
+            <span className="ml-2 text-primary font-medium">
+              · {selectedIds.size} selecionada(s)
+            </span>
+          )}
         </p>
         <button
           onClick={handleDownloadBatch}
           className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
         >
           <Download className="w-4 h-4" />
-          Baixar relatório em lote
+          {someSelected
+            ? `Baixar relatório (${selectedIds.size} selecionadas)`
+            : "Baixar relatório em lote"}
         </button>
       </div>
 
@@ -244,17 +277,25 @@ const Dashboard = () => {
       <div className="w-full rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm table-fixed">
           <colgroup>
-            <col className="w-[20%]" />
+            <col className="w-[4%]" />
+            <col className="w-[18%]" />
             <col className="w-[8%]" />
-            <col className="w-[14%]" />
-            <col className="w-[14%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
             <col className="w-[10%]" />
+            <col className="w-[13%]" />
             <col className="w-[14%]" />
-            <col className="w-[14%]" />
-            <col className="w-[6%]" />
+            <col className="w-[5%]" />
           </colgroup>
           <thead>
             <tr className="bg-secondary text-left">
+              <th className="px-3 py-3 text-center">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Selecionar todas"
+                />
+              </th>
               <th className="px-4 py-3 font-semibold text-foreground">Empresa</th>
               <th className="px-4 py-3 font-semibold text-foreground">Mês ref.</th>
               <th className="px-4 py-3 font-semibold text-foreground text-right">
@@ -279,7 +320,19 @@ const Dashboard = () => {
           </thead>
           <tbody>
             {filteredClients.map((c) => (
-              <tr key={c.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+              <tr
+                key={c.id}
+                className={`border-t border-border hover:bg-muted/30 transition-colors ${
+                  selectedIds.has(c.id) ? "bg-primary/5" : ""
+                }`}
+              >
+                <td className="px-3 py-4 text-center">
+                  <Checkbox
+                    checked={selectedIds.has(c.id)}
+                    onCheckedChange={() => toggleSelect(c.id)}
+                    aria-label={`Selecionar ${c.razao_social}`}
+                  />
+                </td>
                 <td className="px-4 py-4">
                   <div className="font-medium text-foreground truncate">{c.razao_social}</div>
                   <div className="text-xs text-muted-foreground">{formatCNPJ(c.cnpj)}</div>
@@ -333,7 +386,7 @@ const Dashboard = () => {
             ))}
             {filteredClients.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                   Nenhum cliente encontrado
                 </td>
               </tr>
