@@ -148,9 +148,10 @@ const Dashboard = () => {
     cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 
   const handleDownloadSingle = (client: (typeof filteredClients)[0]) => {
-    const csv = generateReportCSV([client], refDate, periodStart, periodEnd);
-    downloadCSV(csv, `relatorio_economia_${client.razao_social.replace(/\s+/g, "_")}_${formatMonth(refDate).replace("/", "_")}.csv`);
-    toast.success(`Relatório gerado para ${client.razao_social}`);
+    const reportData = buildReportData(client, monthlyData, refDate, periodEnd);
+    const doc = generateReportPdf(reportData);
+    doc.save(`relatorio_fator_r_${client.razao_social.replace(/\s+/g, "_")}_${formatMonth(refDate).replace("/", "_")}.pdf`);
+    toast.success(`Relatório PDF gerado para ${client.razao_social}`);
   };
 
   const handleDownloadBatch = () => {
@@ -162,9 +163,13 @@ const Dashboard = () => {
       toast.error("Nenhum cliente selecionado para exportar.");
       return;
     }
-    const csv = generateReportCSV(toExport, refDate, periodStart, periodEnd);
-    downloadCSV(csv, `relatorio_economia_lote_${formatMonth(refDate).replace("/", "_")}.csv`);
-    toast.success(`Relatório em lote gerado com ${toExport.length} empresa(s)`);
+
+    const dataList = toExport.map((c) => buildReportData(c, monthlyData, refDate, periodEnd));
+    const doc = generateBatchReportPdf(dataList);
+    if (doc) {
+      doc.save(`relatorio_fator_r_lote_${formatMonth(refDate).replace("/", "_")}.pdf`);
+      toast.success(`Relatório PDF em lote gerado com ${toExport.length} empresa(s)`);
+    }
   };
 
   return (
