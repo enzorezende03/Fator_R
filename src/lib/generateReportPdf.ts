@@ -212,9 +212,9 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     doc.setTextColor(0);
 
     doc.text(row.d, dX + 3, ty);
-    doc.text(row.p, pctEnd, ty, { align: "right" });
-    doc.text("R$", rsX, ty);
-    doc.text(row.v, valEnd, ty, { align: "right" });
+    doc.text(row.p, colPctX + colPctW - 3, ty, { align: "right" });
+    doc.text("R$", colRsX + 2, ty);
+    doc.text(row.v, dX + dW - 3, ty, { align: "right" });
 
     // Bottom line
     doc.setLineWidth(row.b ? 0.5 : 0.25);
@@ -222,11 +222,15 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     doc.line(dX, ry + rh, dX + dW, ry + rh);
   });
 
-  // Right border of data area
+  // Outer borders + column vertical borders
   doc.setLineWidth(0.35);
-  doc.line(dX + dW, y, dX + dW, y + h3);
-  // Left border (already covered by label cells, but add vertical separators)
-  doc.line(dX, y, dX, y + h3);
+  doc.setDrawColor(0);
+  doc.line(dX, y, dX + dW, y);           // top
+  doc.line(dX, y, dX, y + h3);           // left
+  doc.line(dX + dW, y, dX + dW, y + h3); // right
+  doc.line(colPctX, y, colPctX, y + h3); // desc | pct
+  doc.line(colRsX, y, colRsX, y + h3);  // pct | R$
+  doc.line(colValX, y, colValX, y + h3); // R$ | val
 
   y += h3 + 4;
 
