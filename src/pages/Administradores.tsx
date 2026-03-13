@@ -127,8 +127,8 @@ const Administradores = () => {
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-8 h-8 text-primary" />
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">Administradores</h1>
-            <p className="text-sm text-muted-foreground">Gerencie os administradores do sistema</p>
+            <h1 className="font-display text-3xl font-bold text-foreground">Usuários</h1>
+            <p className="text-sm text-muted-foreground">Gerencie os administradores e usuários do sistema</p>
           </div>
         </div>
         <button
