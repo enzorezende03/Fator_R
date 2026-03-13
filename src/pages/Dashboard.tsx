@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, FileText, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { generateReportPdf, generateBatchReportPdf, type ReportData } from "@/lib/generateReportPdf";
 
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -22,36 +23,29 @@ const addMonths = (date: Date, months: number) =>
 
 type FilterType = "all" | "gte28" | "lt28" | "na";
 
-const generateReportCSV = (
-  clients: ReturnType<typeof buildClientCalcs>,
+function buildReportData(
+  client: ReturnType<typeof buildClientCalcs>[0],
+  monthlyData: any[],
   refDate: Date,
-  periodStart: Date,
   periodEnd: Date
-) => {
-  const header = "Empresa;CNPJ;Mês Ref.;RBA 12 Meses;Folha 12 Meses;Fator R;Anexo;Complemento de Folha;Recomendação";
-  const rows = clients.map((c) => {
-    const fatorRStr = c.fatorR !== null ? (c.fatorR * 100).toFixed(2) + "%" : "N/A";
-    const anexoStr = c.fatorR === null ? "N/A" : c.fatorR >= 0.28 ? "Anexo III" : "Anexo V";
-    const complemento = c.complementoFolha > 0 ? c.complementoFolha.toFixed(2).replace(".", ",") : "0,00";
-    const recomendacao = c.complementoFolha > 0
-      ? `Aumentar folha em R$ ${c.complementoFolha.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-      : c.fatorR !== null && c.fatorR >= 0.28
-      ? "Anexo III ✓"
-      : "—";
-    return `${c.razao_social};${c.cnpj};${formatMonth(refDate)};${c.rba12.toFixed(2).replace(".", ",")};${c.folha12.toFixed(2).replace(".", ",")};${fatorRStr};${anexoStr};${complemento};${recomendacao}`;
-  });
-  return "\uFEFF" + [header, ...rows].join("\n");
-};
+): ReportData {
+  // Get the most recent month's data for this client
+  const endStr = periodEnd.toISOString().split("T")[0];
+  const clientMonthData = monthlyData.find(
+    (d) => d.client_id === client.id && d.mes_referencia === endStr
+  );
+  const faturamentoMes = clientMonthData ? Number(clientMonthData.faturamento) : 0;
+  const folhaMes = clientMonthData ? Number(clientMonthData.folha_salarios) : 0;
 
-const downloadCSV = (content: string, filename: string) => {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-};
+  return {
+    razaoSocial: client.razao_social,
+    cnpj: client.cnpj,
+    competencia: formatMonth(refDate),
+    rbt12: client.rba12,
+    faturamentoMes,
+    folhaMes,
+  };
+}
 
 function buildClientCalcs(clients: any[], monthlyData: any[]) {
   return clients.map((client) => {
@@ -154,9 +148,10 @@ const Dashboard = () => {
     cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
 
   const handleDownloadSingle = (client: (typeof filteredClients)[0]) => {
-    const csv = generateReportCSV([client], refDate, periodStart, periodEnd);
-    downloadCSV(csv, `relatorio_economia_${client.razao_social.replace(/\s+/g, "_")}_${formatMonth(refDate).replace("/", "_")}.csv`);
-    toast.success(`Relatório gerado para ${client.razao_social}`);
+    const reportData = buildReportData(client, monthlyData, refDate, periodEnd);
+    const doc = generateReportPdf(reportData);
+    doc.save(`relatorio_fator_r_${client.razao_social.replace(/\s+/g, "_")}_${formatMonth(refDate).replace("/", "_")}.pdf`);
+    toast.success(`Relatório PDF gerado para ${client.razao_social}`);
   };
 
   const handleDownloadBatch = () => {
@@ -168,9 +163,13 @@ const Dashboard = () => {
       toast.error("Nenhum cliente selecionado para exportar.");
       return;
     }
-    const csv = generateReportCSV(toExport, refDate, periodStart, periodEnd);
-    downloadCSV(csv, `relatorio_economia_lote_${formatMonth(refDate).replace("/", "_")}.csv`);
-    toast.success(`Relatório em lote gerado com ${toExport.length} empresa(s)`);
+
+    const dataList = toExport.map((c) => buildReportData(c, monthlyData, refDate, periodEnd));
+    const doc = generateBatchReportPdf(dataList);
+    if (doc) {
+      doc.save(`relatorio_fator_r_lote_${formatMonth(refDate).replace("/", "_")}.pdf`);
+      toast.success(`Relatório PDF em lote gerado com ${toExport.length} empresa(s)`);
+    }
   };
 
   return (
