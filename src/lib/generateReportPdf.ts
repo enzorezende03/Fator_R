@@ -162,11 +162,14 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const dW = cw - c1 - c2; // data total width
   const rh = 7.5; // row height
 
-  // Column positions within data area
-  const descEnd = dX + dW * 0.40;
-  const pctEnd = dX + dW * 0.62;
-  const rsX = dX + dW * 0.64;
-  const valEnd = dX + dW - 2;
+  // Column boundaries within data area (4 columns: desc | pct | rs | val)
+  const colDescW = dW * 0.40;
+  const colPctW = dW * 0.15;
+  const colRsW = dW * 0.10;
+  const colValW = dW * 0.35;
+  const colPctX = dX + colDescW;          // start of pct column
+  const colRsX = colPctX + colPctW;       // start of R$ column
+  const colValX = colRsX + colRsW;        // start of value column
 
   // === ANEXO III ===
   const r3 = 3;
