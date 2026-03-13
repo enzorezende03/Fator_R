@@ -16,47 +16,45 @@ const formatCNPJ = (cnpj: string) =>
 const fmtCur = (v: number) =>
   v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function createDonutImage(percentage: number): string {
+function drawDonut(percentage: number): string {
   const canvas = document.createElement("canvas");
-  const size = 240;
-  canvas.width = size;
-  canvas.height = size;
+  const s = 300;
+  canvas.width = s;
+  canvas.height = s;
   const ctx = canvas.getContext("2d")!;
-  const cx = size / 2;
-  const cy = size / 2;
-  const outerR = size / 2 - 8;
-  const innerR = outerR * 0.68;
-  const startAngle = -Math.PI / 2;
+  const cx = s / 2, cy = s / 2;
+  const oR = s / 2 - 10;
+  const iR = oR * 0.66;
+  const start = -Math.PI / 2;
+  const angle = (percentage / 100) * Math.PI * 2;
 
-  // Full ring - light gray
+  // Background ring
   ctx.beginPath();
-  ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-  ctx.arc(cx, cy, innerR, Math.PI * 2, 0, true);
+  ctx.arc(cx, cy, oR, 0, Math.PI * 2);
+  ctx.arc(cx, cy, iR, Math.PI * 2, 0, true);
   ctx.closePath();
-  ctx.fillStyle = "#c8cdd3";
+  ctx.fillStyle = "#bfc5cb";
   ctx.fill();
 
-  // Economy portion - steel blue
-  const econAngle = (percentage / 100) * Math.PI * 2;
+  // Main arc (steel blue)
   ctx.beginPath();
-  ctx.arc(cx, cy, outerR, startAngle, startAngle + econAngle);
-  ctx.arc(cx, cy, innerR, startAngle + econAngle, startAngle, true);
+  ctx.arc(cx, cy, oR, start, start + angle);
+  ctx.arc(cx, cy, iR, start + angle, start, true);
   ctx.closePath();
-  ctx.fillStyle = "#4a90a8";
+  ctx.fillStyle = "#5ba0b5";
   ctx.fill();
 
-  // Small green accent sliver at the junction
-  const accentWidth = 0.06;
+  // Green sliver at junction
   ctx.beginPath();
-  ctx.arc(cx, cy, outerR, startAngle + econAngle - accentWidth, startAngle + econAngle + accentWidth);
-  ctx.arc(cx, cy, innerR, startAngle + econAngle + accentWidth, startAngle + econAngle - accentWidth, true);
+  ctx.arc(cx, cy, oR, start + angle - 0.04, start + angle + 0.06);
+  ctx.arc(cx, cy, iR, start + angle + 0.06, start + angle - 0.04, true);
   ctx.closePath();
-  ctx.fillStyle = "#7cb950";
+  ctx.fillStyle = "#8cc152";
   ctx.fill();
 
-  // Center text
-  ctx.fillStyle = "#4a90a8";
-  ctx.font = `bold ${size * 0.2}px Arial, Helvetica, sans-serif`;
+  // Percentage text in center
+  ctx.fillStyle = "#5ba0b5";
+  ctx.font = `bold ${s * 0.22}px Arial`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(`${Math.round(percentage)}%`, cx, cy);
@@ -64,224 +62,226 @@ function createDonutImage(percentage: number): string {
   return canvas.toDataURL("image/png");
 }
 
-function createMoneyIcon(): string {
+function drawMoneyIcon(): string {
   const canvas = document.createElement("canvas");
-  const size = 120;
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = 150;
+  canvas.height = 150;
   const ctx = canvas.getContext("2d")!;
 
-  // Background circle
-  ctx.fillStyle = "#e8f5e9";
+  // Green bills
+  ctx.fillStyle = "#4caf50";
   ctx.beginPath();
-  ctx.arc(60, 60, 50, 0, Math.PI * 2);
+  ctx.roundRect(20, 50, 110, 55, 6);
+  ctx.fill();
+  ctx.fillStyle = "#388e3c";
+  ctx.beginPath();
+  ctx.roundRect(30, 55, 90, 45, 4);
   ctx.fill();
 
-  // Hand (simplified palm)
-  ctx.fillStyle = "#f0c28d";
-  ctx.beginPath();
-  ctx.moveTo(20, 75);
-  ctx.quadraticCurveTo(30, 55, 60, 50);
-  ctx.quadraticCurveTo(90, 55, 100, 75);
-  ctx.quadraticCurveTo(90, 95, 60, 100);
-  ctx.quadraticCurveTo(30, 95, 20, 75);
-  ctx.fill();
-
-  // Green coin
-  ctx.fillStyle = "#43a047";
-  ctx.beginPath();
-  ctx.arc(60, 40, 24, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#2e7d32";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Dollar sign on coin
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 26px Arial";
+  // Dollar
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 30px Arial";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("$", 60, 41);
+  ctx.fillText("$", 75, 78);
 
-  // Bills behind
-  ctx.fillStyle = "#66bb6a";
-  ctx.fillRect(15, 60, 30, 6);
-  ctx.fillRect(75, 60, 30, 6);
+  // Coin
+  ctx.fillStyle = "#ffc107";
+  ctx.beginPath();
+  ctx.arc(95, 45, 22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#f9a825";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 20px Arial";
+  ctx.fillText("$", 95, 46);
 
   return canvas.toDataURL("image/png");
 }
 
 function generatePage(doc: jsPDF, data: ReportData) {
-  const pw = doc.internal.pageSize.getWidth();
-  const margin = 22;
-  const cw = pw - margin * 2;
+  const pw = 210; // A4 width mm
+  const m = 20;   // margin
+  const cw = pw - m * 2; // content width = 170
 
-  // ===== HEADER: "Análise Fator R" =====
-  doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(58, 130, 110);
-  doc.text("Análise Fator R", pw / 2 + 20, 28, { align: "center" });
-
-  // ===== DESCRIPTION =====
-  let y = 48;
-  doc.setFontSize(10.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(30, 30, 30);
-  const cnpjF = formatCNPJ(data.cnpj);
-  const desc = `Através da análise tributária realizada, informamos que sua empresa ${data.razaoSocial} inscrita no CNPJ n° ${cnpjF} terá na competência ${data.competencia} uma economia de:`;
-  const lines = doc.splitTextToSize(desc, cw);
-  doc.text(lines, margin, y);
-  y += lines.length * 5 + 8;
-
-  // ===== CALCULATIONS =====
+  // === CALCULATIONS ===
   const aliqIII = calcularAliquotaEfetiva(data.rbt12, true);
   const aliqV = calcularAliquotaEfetiva(data.rbt12, false);
   const valS3 = aliqIII !== null ? data.faturamentoMes * (aliqIII / 100) : 0;
   const valS5 = aliqV !== null ? data.faturamentoMes * (aliqV / 100) : 0;
   const proLabPct = data.faturamentoMes > 0 ? (data.folhaMes / data.faturamentoMes) * 100 : 0;
-  const total3 = valS3 + data.folhaMes;
+  const total3Val = valS3 + data.folhaMes;
   const total3Pct = (aliqIII ?? 0) + proLabPct;
-  const economia = valS5 - total3;
+  const economia = valS5 - total3Val;
   const econPct = valS5 > 0 ? (economia / valS5) * 100 : 0;
 
-  // ===== TABLE LAYOUT =====
-  const lbl1W = 24;  // "Quanto Paguel" / "O que era pra pagar"
-  const lbl2W = 24;  // "Anexo III" / "Anexo V"
-  const rh = 8;      // row height
-  const dataStartX = margin + lbl1W + lbl2W;
-  const dataW = cw - lbl1W - lbl2W;
-  const col1W = dataW * 0.38;  // description
-  const col2W = dataW * 0.18;  // percentage
-  const col3W = dataW * 0.10;  // "R$"
-  const col4W = dataW * 0.34;  // value
-
-  // ===== ANEXO III TABLE (3 rows) =====
-  const t3rows = 3;
-  const t3h = t3rows * rh;
-
-  // Left label cells with borders
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.4);
-  doc.rect(margin, y, lbl1W, t3h);
-  doc.rect(margin + lbl1W, y, lbl2W, t3h);
-
-  doc.setFontSize(9);
+  // === HEADER ===
+  doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(0, 0, 0);
-  doc.text("Quanto", margin + lbl1W / 2, y + t3h / 2 - 2.5, { align: "center" });
-  doc.text("Paguel", margin + lbl1W / 2, y + t3h / 2 + 2.5, { align: "center" });
+  doc.setTextColor(60, 140, 115);
+  doc.text("Análise Fator R", pw / 2 + 15, 30, { align: "center" });
 
+  // === DESCRIPTION ===
   doc.setFontSize(10);
-  doc.text("Anexo III", margin + lbl1W + lbl2W / 2, y + t3h / 2, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(30, 30, 30);
+  const cnpjF = formatCNPJ(data.cnpj);
+  const txt = `Através da análise tributária realizada, informamos que sua empresa ${data.razaoSocial} inscrita no CNPJ n° ${cnpjF} terá na competência ${data.competencia} uma economia de:`;
+  const lines = doc.splitTextToSize(txt, cw);
+  doc.text(lines, m, 50);
 
-  // Data rows - only bottom borders (horizontal lines)
-  const rows3 = [
-    { desc: "Simples", pct: aliqIII !== null ? `${aliqIII.toFixed(2)}%` : "N/A", val: fmtCur(valS3), bold: false },
-    { desc: "Gastos com Pró-labore", pct: `${proLabPct.toFixed(2)}%`, val: fmtCur(data.folhaMes), bold: false },
-    { desc: "Total", pct: `${total3Pct.toFixed(2)}%`, val: fmtCur(total3), bold: true },
-  ];
+  let y = 50 + lines.length * 4.5 + 6;
 
-  rows3.forEach((row, i) => {
-    const ry = y + i * rh;
+  // === TABLE CONFIG ===
+  const c1 = 22;  // label 1 width
+  const c2 = 22;  // label 2 width (Anexo)
+  const dX = m + c1 + c2; // data start X
+  const dW = cw - c1 - c2; // data total width
+  const rh = 7.5; // row height
 
-    doc.setFont("helvetica", row.bold ? "bold" : "normal");
-    doc.setFontSize(9.5);
-    doc.setTextColor(0, 0, 0);
+  // Column positions within data area
+  const descEnd = dX + dW * 0.40;
+  const pctEnd = dX + dW * 0.62;
+  const rsX = dX + dW * 0.64;
+  const valEnd = dX + dW - 2;
 
-    // Description
-    doc.text(row.desc, dataStartX + 3, ry + rh / 2 + 1);
-    // Percentage
-    doc.text(row.pct, dataStartX + col1W + col2W - 2, ry + rh / 2 + 1, { align: "right" });
-    // "R$"
-    doc.text("R$", dataStartX + col1W + col2W + 3, ry + rh / 2 + 1);
-    // Value
-    doc.text(row.val, dataStartX + dataW - 3, ry + rh / 2 + 1, { align: "right" });
+  // === ANEXO III ===
+  const r3 = 3;
+  const h3 = r3 * rh;
 
-    // Bottom border line
-    doc.setLineWidth(row.bold ? 0.5 : 0.2);
-    doc.line(dataStartX, ry + rh, dataStartX + dataW, ry + rh);
-  });
-
-  y += t3h + 5;
-
-  // ===== ANEXO V TABLE (2 rows) =====
-  const t5rows = 2;
-  const t5h = t5rows * rh;
-
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.4);
-  doc.rect(margin, y, lbl1W, t5h);
-  doc.rect(margin + lbl1W, y, lbl2W, t5h);
+  // Label cell 1: "Quanto Paguei"
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.35);
+  doc.rect(m, y, c1, h3);
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
-  doc.text("O que era", margin + lbl1W / 2, y + t5h / 2 - 2.5, { align: "center" });
-  doc.text("pra pagar", margin + lbl1W / 2, y + t5h / 2 + 2.5, { align: "center" });
+  doc.setTextColor(0);
+  doc.text("Quanto", m + c1 / 2, y + h3 / 2 - 2, { align: "center" });
+  doc.text("Paguei", m + c1 / 2, y + h3 / 2 + 2, { align: "center" });
 
-  doc.setFontSize(10);
-  doc.text("Anexo V", margin + lbl1W + lbl2W / 2, y + t5h / 2, { align: "center" });
+  // Label cell 2: "Anexo III"
+  doc.rect(m + c1, y, c2, h3);
+  doc.setFontSize(9);
+  doc.text("Anexo III", m + c1 + c2 / 2, y + h3 / 2, { align: "center" });
 
-  const rows5 = [
-    { desc: "Simples", pct: aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", val: fmtCur(valS5), bold: false },
-    { desc: "Total", pct: aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", val: fmtCur(valS5), bold: true },
+  // Data rows
+  const data3 = [
+    { d: "Simples", p: aliqIII !== null ? `${aliqIII.toFixed(2)}%` : "N/A", v: fmtCur(valS3), b: false },
+    { d: "Gastos com Pró-labore", p: `${proLabPct.toFixed(2)}%`, v: fmtCur(data.folhaMes), b: false },
+    { d: "Total", p: `${total3Pct.toFixed(2)}%`, v: fmtCur(total3Val), b: true },
   ];
 
-  rows5.forEach((row, i) => {
+  data3.forEach((row, i) => {
     const ry = y + i * rh;
-    doc.setFont("helvetica", row.bold ? "bold" : "normal");
-    doc.setFontSize(9.5);
-    doc.setTextColor(0, 0, 0);
+    const ty = ry + rh / 2 + 1;
 
-    doc.text(row.desc, dataStartX + 3, ry + rh / 2 + 1);
-    doc.text(row.pct, dataStartX + col1W + col2W - 2, ry + rh / 2 + 1, { align: "right" });
-    doc.text("R$", dataStartX + col1W + col2W + 3, ry + rh / 2 + 1);
-    doc.text(row.val, dataStartX + dataW - 3, ry + rh / 2 + 1, { align: "right" });
+    doc.setFont("helvetica", row.b ? "bold" : "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(0);
 
-    doc.setLineWidth(row.bold ? 0.5 : 0.2);
-    doc.line(dataStartX, ry + rh, dataStartX + dataW, ry + rh);
+    doc.text(row.d, dX + 3, ty);
+    doc.text(row.p, pctEnd, ty, { align: "right" });
+    doc.text("R$", rsX, ty);
+    doc.text(row.v, valEnd, ty, { align: "right" });
+
+    // Bottom line
+    doc.setLineWidth(row.b ? 0.5 : 0.15);
+    doc.setDrawColor(0);
+    doc.line(dX, ry + rh, dX + dW, ry + rh);
   });
 
-  y += t5h + 10;
+  y += h3 + 4;
 
-  // ===== ECONOMIA BOX =====
-  const boxW = cw * 0.75;
-  const boxX = margin + (cw - boxW) / 2;
-  const boxH = 42;
+  // === ANEXO V ===
+  const r5 = 2;
+  const h5 = r5 * rh;
 
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.8);
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.35);
+  doc.rect(m, y, c1, h5);
+
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0);
+  doc.text("O que era", m + c1 / 2, y + h5 / 2 - 2, { align: "center" });
+  doc.text("pra pagar", m + c1 / 2, y + h5 / 2 + 2, { align: "center" });
+
+  doc.rect(m + c1, y, c2, h5);
+  doc.setFontSize(9);
+  doc.text("Anexo V", m + c1 + c2 / 2, y + h5 / 2, { align: "center" });
+
+  const data5 = [
+    { d: "Simples", p: aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", v: fmtCur(valS5), b: false },
+    { d: "Total", p: aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", v: fmtCur(valS5), b: true },
+  ];
+
+  data5.forEach((row, i) => {
+    const ry = y + i * rh;
+    const ty = ry + rh / 2 + 1;
+
+    doc.setFont("helvetica", row.b ? "bold" : "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(0);
+
+    doc.text(row.d, dX + 3, ty);
+    doc.text(row.p, pctEnd, ty, { align: "right" });
+    doc.text("R$", rsX, ty);
+    doc.text(row.v, valEnd, ty, { align: "right" });
+
+    doc.setLineWidth(row.b ? 0.5 : 0.15);
+    doc.setDrawColor(0);
+    doc.line(dX, ry + rh, dX + dW, ry + rh);
+  });
+
+  y += h5 + 12;
+
+  // === ECONOMIA BOX ===
+  const boxW = cw * 0.72;
+  const boxX = m + (cw - boxW) / 2;
+  const boxH = 45;
+
+  doc.setDrawColor(0);
+  doc.setLineWidth(1);
   doc.rect(boxX, y, boxW, boxH);
 
   // "Economia de:" title
-  doc.setFontSize(17);
+  doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 30, 30);
-  doc.text("Economia de:", boxX + boxW / 2, y + 11, { align: "center" });
+  doc.setTextColor(0);
+  doc.text("Economia de:", boxX + boxW / 2, y + 12, { align: "center" });
 
-  // Thin line under title
-  doc.setLineWidth(0.3);
-  doc.setDrawColor(180, 180, 180);
-  doc.line(boxX + 10, y + 15, boxX + boxW - 10, y + 15);
+  // Underline
+  const titleW = doc.getTextWidth("Economia de:");
+  doc.setLineWidth(0.4);
+  doc.setDrawColor(0);
+  doc.line(boxX + boxW / 2 - titleW / 2, y + 14, boxX + boxW / 2 + titleW / 2, y + 14);
 
   // Money icon
   try {
-    const iconImg = createMoneyIcon();
-    doc.addImage(iconImg, "PNG", boxX + 8, y + 19, 14, 14);
+    const iconImg = drawMoneyIcon();
+    doc.addImage(iconImg, "PNG", boxX + 8, y + 20, 16, 16);
   } catch (_) { /* skip */ }
 
-  // Big economy value
-  doc.setFontSize(26);
+  // Economy value
+  doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 30, 30);
+  doc.setTextColor(0);
   const econStr = economia > 0 ? `R$ ${fmtCur(economia)}` : "R$ 0,00";
-  doc.text(econStr, boxX + 26, y + 32);
+  doc.text(econStr, boxX + 28, y + 34);
 
   // Donut chart
   if (econPct > 0) {
     try {
-      const donutImg = createDonutImage(Math.min(econPct, 100));
-      doc.addImage(donutImg, "PNG", boxX + boxW - 38, y + 16, 28, 28);
+      const donutImg = drawDonut(Math.min(Math.abs(econPct), 100));
+      doc.addImage(donutImg, "PNG", boxX + boxW - 38, y + 16, 30, 30);
     } catch (_) { /* skip */ }
+  } else {
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120);
+    doc.text("0%", boxX + boxW - 23, y + 32, { align: "center" });
   }
 }
 
