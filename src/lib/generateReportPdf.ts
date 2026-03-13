@@ -100,7 +100,22 @@ function drawMoneyIcon(): string {
   return canvas.toDataURL("image/png");
 }
 
-function generatePage(doc: jsPDF, data: ReportData) {
+async function loadLogoBase64(): Promise<string | null> {
+  try {
+    const resp = await fetch("/images/logo-2msaude.png");
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const pw = 210; // A4 width mm
   const m = 20;   // margin
   const cw = pw - m * 2; // content width = 170
@@ -117,10 +132,17 @@ function generatePage(doc: jsPDF, data: ReportData) {
   const econPct = valS5 > 0 ? (economia / valS5) * 100 : 0;
 
   // === HEADER ===
+  // Logo
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, "PNG", m, 15, 45, 18);
+    } catch (_) { /* skip */ }
+  }
+
   doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(60, 140, 115);
-  doc.text("Análise Fator R", pw / 2 + 15, 30, { align: "center" });
+  doc.text("Análise Fator R", pw / 2 + 20, 28, { align: "center" });
 
   // === DESCRIPTION ===
   doc.setFontSize(10);
@@ -285,18 +307,20 @@ function generatePage(doc: jsPDF, data: ReportData) {
   }
 }
 
-export function generateReportPdf(data: ReportData): jsPDF {
+export async function generateReportPdf(data: ReportData): Promise<jsPDF> {
+  const logo = await loadLogoBase64();
   const doc = new jsPDF("p", "mm", "a4");
-  generatePage(doc, data);
+  generatePage(doc, data, logo);
   return doc;
 }
 
-export function generateBatchReportPdf(dataList: ReportData[]): jsPDF | null {
+export async function generateBatchReportPdf(dataList: ReportData[]): Promise<jsPDF | null> {
   if (dataList.length === 0) return null;
+  const logo = await loadLogoBase64();
   const doc = new jsPDF("p", "mm", "a4");
   dataList.forEach((data, idx) => {
     if (idx > 0) doc.addPage();
-    generatePage(doc, data);
+    generatePage(doc, data, logo);
   });
   return doc;
 }
