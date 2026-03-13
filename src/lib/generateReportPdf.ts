@@ -100,7 +100,22 @@ function drawMoneyIcon(): string {
   return canvas.toDataURL("image/png");
 }
 
-function generatePage(doc: jsPDF, data: ReportData) {
+async function loadLogoBase64(): Promise<string | null> {
+  try {
+    const resp = await fetch("/images/logo-2msaude.png");
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const pw = 210; // A4 width mm
   const m = 20;   // margin
   const cw = pw - m * 2; // content width = 170
