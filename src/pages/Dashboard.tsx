@@ -23,36 +23,29 @@ const addMonths = (date: Date, months: number) =>
 
 type FilterType = "all" | "gte28" | "lt28" | "na";
 
-const generateReportCSV = (
-  clients: ReturnType<typeof buildClientCalcs>,
+function buildReportData(
+  client: ReturnType<typeof buildClientCalcs>[0],
+  monthlyData: any[],
   refDate: Date,
-  periodStart: Date,
   periodEnd: Date
-) => {
-  const header = "Empresa;CNPJ;Mês Ref.;RBA 12 Meses;Folha 12 Meses;Fator R;Anexo;Complemento de Folha;Recomendação";
-  const rows = clients.map((c) => {
-    const fatorRStr = c.fatorR !== null ? (c.fatorR * 100).toFixed(2) + "%" : "N/A";
-    const anexoStr = c.fatorR === null ? "N/A" : c.fatorR >= 0.28 ? "Anexo III" : "Anexo V";
-    const complemento = c.complementoFolha > 0 ? c.complementoFolha.toFixed(2).replace(".", ",") : "0,00";
-    const recomendacao = c.complementoFolha > 0
-      ? `Aumentar folha em R$ ${c.complementoFolha.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-      : c.fatorR !== null && c.fatorR >= 0.28
-      ? "Anexo III ✓"
-      : "—";
-    return `${c.razao_social};${c.cnpj};${formatMonth(refDate)};${c.rba12.toFixed(2).replace(".", ",")};${c.folha12.toFixed(2).replace(".", ",")};${fatorRStr};${anexoStr};${complemento};${recomendacao}`;
-  });
-  return "\uFEFF" + [header, ...rows].join("\n");
-};
+): ReportData {
+  // Get the most recent month's data for this client
+  const endStr = periodEnd.toISOString().split("T")[0];
+  const clientMonthData = monthlyData.find(
+    (d) => d.client_id === client.id && d.mes_referencia === endStr
+  );
+  const faturamentoMes = clientMonthData ? Number(clientMonthData.faturamento) : 0;
+  const folhaMes = clientMonthData ? Number(clientMonthData.folha_salarios) : 0;
 
-const downloadCSV = (content: string, filename: string) => {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-};
+  return {
+    razaoSocial: client.razao_social,
+    cnpj: client.cnpj,
+    competencia: formatMonth(refDate),
+    rbt12: client.rba12,
+    faturamentoMes,
+    folhaMes,
+  };
+}
 
 function buildClientCalcs(clients: any[], monthlyData: any[]) {
   return clients.map((client) => {
