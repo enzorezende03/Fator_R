@@ -132,10 +132,17 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const econPct = valS5 > 0 ? (economia / valS5) * 100 : 0;
 
   // === HEADER ===
+  // Logo
+  if (logoBase64) {
+    try {
+      doc.addImage(logoBase64, "PNG", m, 15, 45, 18);
+    } catch (_) { /* skip */ }
+  }
+
   doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(60, 140, 115);
-  doc.text("Análise Fator R", pw / 2 + 15, 30, { align: "center" });
+  doc.text("Análise Fator R", pw / 2 + 20, 28, { align: "center" });
 
   // === DESCRIPTION ===
   doc.setFontSize(10);
