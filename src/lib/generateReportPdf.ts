@@ -230,7 +230,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.line(dX + dW, y, dX + dW, y + h3); // right
   doc.line(colPctX, y, colPctX, y + h3); // desc | pct
   doc.line(colRsX, y, colRsX, y + h3);  // pct | R$
-  doc.line(colValX, y, colValX, y + h3); // R$ | val
+  // colValX border removed (R$ and value share one cell)
 
   y += h3 + 4;
 
