@@ -188,12 +188,17 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.text("Anexo III", m + c1 + c2 / 2, y + h3 / 2, { align: "center" });
 
-  // Data rows
+  // Data rows - fully bordered
   const data3 = [
     { d: "Simples", p: aliqIII !== null ? `${aliqIII.toFixed(2)}%` : "N/A", v: fmtCur(valS3), b: false },
     { d: "Gastos com Pró-labore", p: `${proLabPct.toFixed(2)}%`, v: fmtCur(data.folhaMes), b: false },
     { d: "Total", p: `${total3Pct.toFixed(2)}%`, v: fmtCur(total3Val), b: true },
   ];
+
+  // Top border of data area
+  doc.setLineWidth(0.35);
+  doc.setDrawColor(0);
+  doc.line(dX, y, dX + dW, y);
 
   data3.forEach((row, i) => {
     const ry = y + i * rh;
@@ -209,10 +214,16 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     doc.text(row.v, valEnd, ty, { align: "right" });
 
     // Bottom line
-    doc.setLineWidth(row.b ? 0.5 : 0.15);
+    doc.setLineWidth(row.b ? 0.5 : 0.25);
     doc.setDrawColor(0);
     doc.line(dX, ry + rh, dX + dW, ry + rh);
   });
+
+  // Right border of data area
+  doc.setLineWidth(0.35);
+  doc.line(dX + dW, y, dX + dW, y + h3);
+  // Left border (already covered by label cells, but add vertical separators)
+  doc.line(dX, y, dX, y + h3);
 
   y += h3 + 4;
 
@@ -239,6 +250,11 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     { d: "Total", p: aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", v: fmtCur(valS5), b: true },
   ];
 
+  // Top border
+  doc.setLineWidth(0.35);
+  doc.setDrawColor(0);
+  doc.line(dX, y, dX + dW, y);
+
   data5.forEach((row, i) => {
     const ry = y + i * rh;
     const ty = ry + rh / 2 + 1;
@@ -252,10 +268,15 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     doc.text("R$", rsX, ty);
     doc.text(row.v, valEnd, ty, { align: "right" });
 
-    doc.setLineWidth(row.b ? 0.5 : 0.15);
+    doc.setLineWidth(row.b ? 0.5 : 0.25);
     doc.setDrawColor(0);
     doc.line(dX, ry + rh, dX + dW, ry + rh);
   });
+
+  // Right and left borders
+  doc.setLineWidth(0.35);
+  doc.line(dX + dW, y, dX + dW, y + h5);
+  doc.line(dX, y, dX, y + h5);
 
   y += h5 + 12;
 
