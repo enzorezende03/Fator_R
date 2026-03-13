@@ -154,7 +154,7 @@ const Dashboard = () => {
     toast.success(`Relatório PDF gerado para ${client.razao_social}`);
   };
 
-  const handleDownloadBatch = () => {
+  const handleDownloadBatch = async () => {
     const toExport = someSelected
       ? filteredClients.filter((c) => selectedIds.has(c.id))
       : filteredClients;
@@ -165,7 +165,7 @@ const Dashboard = () => {
     }
 
     const dataList = toExport.map((c) => buildReportData(c, monthlyData, refDate, periodEnd));
-    const doc = generateBatchReportPdf(dataList);
+    const doc = await generateBatchReportPdf(dataList);
     if (doc) {
       doc.save(`relatorio_fator_r_lote_${formatMonth(refDate).replace("/", "_")}.pdf`);
       toast.success(`Relatório PDF em lote gerado com ${toExport.length} empresa(s)`);
