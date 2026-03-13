@@ -307,18 +307,20 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   }
 }
 
-export function generateReportPdf(data: ReportData): jsPDF {
+export async function generateReportPdf(data: ReportData): Promise<jsPDF> {
+  const logo = await loadLogoBase64();
   const doc = new jsPDF("p", "mm", "a4");
-  generatePage(doc, data);
+  generatePage(doc, data, logo);
   return doc;
 }
 
-export function generateBatchReportPdf(dataList: ReportData[]): jsPDF | null {
+export async function generateBatchReportPdf(dataList: ReportData[]): Promise<jsPDF | null> {
   if (dataList.length === 0) return null;
+  const logo = await loadLogoBase64();
   const doc = new jsPDF("p", "mm", "a4");
   dataList.forEach((data, idx) => {
     if (idx > 0) doc.addPage();
-    generatePage(doc, data);
+    generatePage(doc, data, logo);
   });
   return doc;
 }
