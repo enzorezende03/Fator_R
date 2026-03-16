@@ -192,13 +192,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.text("Anexo III", m + c1 + c2 / 2, y + h3data / 2, { align: "center" });
 
-  // Horizontal line separating Anexo III from Total (across cell2 + desc column)
+  // Horizontal line separating Anexo III from Total in cell 2 only
   doc.setLineWidth(0.35);
-  doc.line(m + c1, y + h3data, colPctX, y + h3data);
+  doc.line(m + c1, y + h3data, m + c1 + c2, y + h3data);
 
-  // "Total" text centered across cell2 + desc merged area
+  // "Total" text in cell 2
   doc.setFontSize(9);
-  doc.text("Total", (m + c1 + colPctX) / 2, y + h3data + rh / 2, { align: "center" });
+  doc.text("Total", m + c1 + c2 / 2, y + h3data + rh / 2, { align: "center" });
 
   // Data rows (Simples + Pró-labore)
   const data3rows = [
@@ -228,8 +228,9 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
+  doc.line(dX, y, dX, y + h3full);                 // left (full height)
   doc.line(dX + dW, y, dX + dW, y + h3full);       // right (full height)
-  doc.line(colPctX, y, colPctX, y + h3data);        // desc | pct (data rows only)
+  doc.line(colPctX, y, colPctX, y + h3full);        // desc | pct (full height)
   doc.line(colRsX, y, colRsX, y + h3full);          // pct | R$ (full height)
 
   // Total row
@@ -240,14 +241,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
+  doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
   doc.text("R$", colRsX + 2, ty3);
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
 
-  // Total row horizontal separators
-  doc.setLineWidth(0.25);
-  doc.line(m, totalY3, dX + dW, totalY3);              // top separator (full width, thin)
-  doc.setLineWidth(0.7);
-  doc.line(m, totalY3 + rh, dX + dW, totalY3 + rh);   // bottom (full width, thick)
+  // Bottom border of total row
+  doc.setLineWidth(0.35);
+  doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);
 
   y = totalY3 + rh + 4;
 
@@ -272,13 +272,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.text("Anexo V", m + c1 + c2 / 2, y + h5data / 2, { align: "center" });
 
-  // Horizontal line separating Anexo V from Total (across cell2 + desc column)
+  // Horizontal line separating Anexo V from Total in cell 2 only
   doc.setLineWidth(0.35);
-  doc.line(m + c1, y + h5data, colPctX, y + h5data);
+  doc.line(m + c1, y + h5data, m + c1 + c2, y + h5data);
 
-  // "Total" text centered across cell2 + desc merged area
+  // "Total" text in cell 2
   doc.setFontSize(9);
-  doc.text("Total", (m + c1 + colPctX) / 2, y + h5data + rh / 2, { align: "center" });
+  doc.text("Total", m + c1 + c2 / 2, y + h5data + rh / 2, { align: "center" });
 
   // Data row (Simples only)
   const ry5 = y;
@@ -295,9 +295,10 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX + dW, y, dX + dW, y + h5full);       // right (full height)
-  doc.line(colPctX, y, colPctX, y + h5data);        // desc | pct (data rows only)
-  doc.line(colRsX, y, colRsX, y + h5full);          // pct | R$ (full height)
+  doc.line(dX, y, dX, y + h5full);                 // left
+  doc.line(dX + dW, y, dX + dW, y + h5full);       // right
+  doc.line(colPctX, y, colPctX, y + h5full);        // desc | pct
+  doc.line(colRsX, y, colRsX, y + h5full);          // pct | R$
 
   // Total row
   const totalY5 = y + h5data;
@@ -307,14 +308,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
+  doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
   doc.text("R$", colRsX + 2, tty5);
   doc.text(fmtCur(valS5), dX + dW - 3, tty5, { align: "right" });
 
-  // Total row horizontal separators
-  doc.setLineWidth(0.25);
-  doc.line(m, totalY5, dX + dW, totalY5);              // top separator (full width, thin)
-  doc.setLineWidth(0.7);
-  doc.line(m, totalY5 + rh, dX + dW, totalY5 + rh);   // bottom (full width, thick)
+  // Bottom border of total row
+  doc.setLineWidth(0.35);
+  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);
 
   y = totalY5 + rh + 12;
 
