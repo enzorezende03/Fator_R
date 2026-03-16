@@ -192,13 +192,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.text("Anexo III", m + c1 + c2 / 2, y + h3data / 2, { align: "center" });
 
-  // Horizontal line separating Anexo III from Total in cell 2 only
+  // Horizontal line separating Anexo III from Total (across cell2 + desc column)
   doc.setLineWidth(0.35);
-  doc.line(m + c1, y + h3data, m + c1 + c2, y + h3data);
+  doc.line(m + c1, y + h3data, colPctX, y + h3data);
 
-  // "Total" text in cell 2
+  // "Total" text centered across cell2 + desc merged area
   doc.setFontSize(9);
-  doc.text("Total", m + c1 + c2 / 2, y + h3data + rh / 2, { align: "center" });
+  doc.text("Total", (m + c1 + colPctX) / 2, y + h3data + rh / 2, { align: "center" });
 
   // Data rows (Simples + Pró-labore)
   const data3rows = [
