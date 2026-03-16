@@ -228,7 +228,6 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX, y, dX, y + h3full);                 // left (full height)
   doc.line(dX + dW, y, dX + dW, y + h3full);       // right (full height)
   doc.line(colPctX, y, colPctX, y + h3full);        // desc | pct (full height)
   doc.line(colRsX, y, colRsX, y + h3full);          // pct | R$ (full height)
@@ -241,13 +240,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
-  doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
   doc.text("R$", colRsX + 2, ty3);
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
 
-  // Bottom border of total row
+  // Total row horizontal separators
   doc.setLineWidth(0.35);
-  doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);
+  doc.line(dX, totalY3, dX + dW, totalY3);            // top separator
+  doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);  // bottom
 
   y = totalY3 + rh + 4;
 
@@ -295,7 +294,6 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX, y, dX, y + h5full);                 // left
   doc.line(dX + dW, y, dX + dW, y + h5full);       // right
   doc.line(colPctX, y, colPctX, y + h5full);        // desc | pct
   doc.line(colRsX, y, colRsX, y + h5full);          // pct | R$
@@ -308,13 +306,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
-  doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
   doc.text("R$", colRsX + 2, tty5);
   doc.text(fmtCur(valS5), dX + dW - 3, tty5, { align: "right" });
 
-  // Bottom border of total row
+  // Total row horizontal separators
   doc.setLineWidth(0.35);
-  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);
+  doc.line(dX, totalY5, dX + dW, totalY5);            // top separator
+  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);  // bottom
 
   y = totalY5 + rh + 12;
 
