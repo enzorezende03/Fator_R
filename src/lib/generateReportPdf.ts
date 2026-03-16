@@ -244,9 +244,10 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
 
   // Total row horizontal separators
-  doc.setLineWidth(0.35);
-  doc.line(dX, totalY3, dX + dW, totalY3);            // top separator
-  doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);  // bottom
+  doc.setLineWidth(0.25);
+  doc.line(m, totalY3, dX + dW, totalY3);              // top separator (full width, thin)
+  doc.setLineWidth(0.7);
+  doc.line(m, totalY3 + rh, dX + dW, totalY3 + rh);   // bottom (full width, thick)
 
   y = totalY3 + rh + 4;
 
@@ -310,9 +311,10 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.text(fmtCur(valS5), dX + dW - 3, tty5, { align: "right" });
 
   // Total row horizontal separators
-  doc.setLineWidth(0.35);
-  doc.line(dX, totalY5, dX + dW, totalY5);            // top separator
-  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);  // bottom
+  doc.setLineWidth(0.25);
+  doc.line(m, totalY5, dX + dW, totalY5);              // top separator (full width, thin)
+  doc.setLineWidth(0.7);
+  doc.line(m, totalY5 + rh, dX + dW, totalY5 + rh);   // bottom (full width, thick)
 
   y = totalY5 + rh + 12;
 
