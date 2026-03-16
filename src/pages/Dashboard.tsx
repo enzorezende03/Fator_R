@@ -276,45 +276,47 @@ const Dashboard = () => {
       <div className="w-full rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm table-fixed">
           <colgroup>
-            <col className="w-[3%]" />
-            <col className="w-[20%]" />
-            <col className="w-[7%]" />
-            <col className="w-[12%]" />
-            <col className="w-[12%]" />
-            <col className="w-[10%]" />
+            <col className="w-[36px]" />
+            <col className="w-[22%]" />
+            <col className="w-[8%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
             <col className="w-[11%]" />
-            <col className="w-[21%]" />
-            <col className="w-[4%]" />
+            <col className="w-[13%]" />
+            <col />
+            <col className="w-[40px]" />
           </colgroup>
           <thead>
             <tr className="bg-secondary text-left">
-              <th className="px-3 py-3 text-center">
+              <th className="px-2 py-3 text-center">
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={toggleSelectAll}
                   aria-label="Selecionar todas"
                 />
               </th>
-              <th className="px-4 py-3 font-semibold text-foreground">Empresa</th>
-              <th className="px-4 py-3 font-semibold text-foreground">Mês ref.</th>
-              <th className="px-4 py-3 font-semibold text-foreground text-right">
+              <th className="px-3 py-3 font-semibold text-foreground text-xs">Empresa</th>
+              <th className="px-3 py-3 font-semibold text-foreground text-xs">Mês ref.</th>
+              <th className="px-3 py-3 font-semibold text-foreground text-xs text-right">
                 <div>RBA</div>
-                <div className="text-xs font-normal text-muted-foreground">12 MESES</div>
+                <div className="font-normal text-muted-foreground" style={{ fontSize: "10px" }}>12 MESES</div>
               </th>
-              <th className="px-4 py-3 font-semibold text-foreground text-right">
+              <th className="px-3 py-3 font-semibold text-foreground text-xs text-right">
                 <div>Folha</div>
-                <div className="text-xs font-normal text-muted-foreground">12 MESES</div>
+                <div className="font-normal text-muted-foreground" style={{ fontSize: "10px" }}>12 MESES</div>
               </th>
-              <th className="px-4 py-3 font-semibold text-foreground text-center">
+              <th className="px-3 py-3 font-semibold text-foreground text-xs text-center">
                 <div>Fator R</div>
-                <div className="text-xs font-normal text-muted-foreground">RESULTADO</div>
+                <div className="font-normal text-muted-foreground" style={{ fontSize: "10px" }}>RESULTADO</div>
               </th>
-              <th className="px-4 py-3 font-semibold text-foreground text-right">
-                <div>Compl. Folha</div>
-                <div className="text-xs font-normal text-muted-foreground">PARA 28%</div>
+              <th className="px-3 py-3 font-semibold text-foreground text-xs text-right">
+                <div>Complemento</div>
+                <div className="font-normal text-muted-foreground" style={{ fontSize: "10px" }}>FOLHA P/ 28%</div>
               </th>
-              <th className="px-4 py-3 font-semibold text-foreground">Recomendação</th>
-              <th className="px-4 py-3 font-semibold text-foreground text-center">Rel.</th>
+              <th className="px-3 py-3 font-semibold text-foreground text-xs">Recomendação</th>
+              <th className="px-2 py-3 font-semibold text-foreground text-xs text-center">
+                <FileText className="w-3.5 h-3.5 mx-auto text-muted-foreground" />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -325,23 +327,23 @@ const Dashboard = () => {
                   selectedIds.has(c.id) ? "bg-primary/5" : ""
                 }`}
               >
-                <td className="px-3 py-4 text-center">
+                <td className="px-2 py-3 text-center">
                   <Checkbox
                     checked={selectedIds.has(c.id)}
                     onCheckedChange={() => toggleSelect(c.id)}
                     aria-label={`Selecionar ${c.razao_social}`}
                   />
                 </td>
-                <td className="px-4 py-4">
-                  <div className="font-medium text-foreground text-xs leading-tight break-words">{c.razao_social}</div>
-                  <div className="text-xs text-muted-foreground">{formatCNPJ(c.cnpj)}</div>
+                <td className="px-3 py-3">
+                  <div className="font-medium text-foreground text-xs leading-snug break-words">{c.razao_social}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{formatCNPJ(c.cnpj)}</div>
                 </td>
-                <td className="px-4 py-4 text-foreground">{formatMonth(refDate)}</td>
-                <td className="px-4 py-4 text-foreground text-right">{formatCurrency(c.rba12)}</td>
-                <td className="px-4 py-4 text-foreground text-right">{formatCurrency(c.folha12)}</td>
-                <td className="px-4 py-4 text-center">
+                <td className="px-3 py-3 text-foreground text-xs">{formatMonth(refDate)}</td>
+                <td className="px-3 py-3 text-foreground text-xs text-right tabular-nums">{formatCurrency(c.rba12)}</td>
+                <td className="px-3 py-3 text-foreground text-xs text-right tabular-nums">{formatCurrency(c.folha12)}</td>
+                <td className="px-3 py-3 text-center">
                   <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                    className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold leading-tight ${
                       c.fatorR === null
                         ? "bg-muted text-muted-foreground"
                         : c.fatorR >= 0.28
@@ -349,22 +351,26 @@ const Dashboard = () => {
                         : "bg-warning/15 text-warning"
                     }`}
                   >
-                    {c.anexo}
+                    {c.fatorR !== null ? c.fatorR.toFixed(2) : "N/A"}
+                    <br />
+                    <span className="font-medium" style={{ fontSize: "10px" }}>
+                      {c.fatorR === null ? "" : c.fatorR >= 0.28 ? "Anexo III" : "Anexo V"}
+                    </span>
                   </span>
                 </td>
-                <td className="px-4 py-4 text-right">
+                <td className="px-3 py-3 text-right text-xs">
                   {c.complementoFolha > 0 ? (
-                    <span className="text-warning font-medium">{formatCurrency(c.complementoFolha)}</span>
+                    <span className="text-warning font-medium tabular-nums">{formatCurrency(c.complementoFolha)}</span>
                   ) : c.fatorR !== null && c.fatorR >= 0.28 ? (
-                    <span className="text-success text-xs">—</span>
+                    <span className="text-muted-foreground">—</span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-4 py-4 text-xs leading-tight">
+                <td className="px-3 py-3 text-xs leading-snug">
                   {c.complementoFolha > 0 ? (
                     <span className="text-warning">
-                      Aumentar folha em {formatCurrency(c.complementoFolha)}
+                      Aumentar folha em<br />{formatCurrency(c.complementoFolha)}
                     </span>
                   ) : c.fatorR !== null && c.fatorR >= 0.28 ? (
                     <span className="text-success">Anexo III ✓</span>
@@ -372,13 +378,13 @@ const Dashboard = () => {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-4 py-4 text-center">
+                <td className="px-2 py-3 text-center">
                   <button
                     onClick={() => handleDownloadSingle(c)}
-                    className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                    className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                     title="Gerar relatório de economia"
                   >
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-3.5 h-3.5" />
                   </button>
                 </td>
               </tr>
