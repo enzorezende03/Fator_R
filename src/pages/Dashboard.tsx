@@ -361,7 +361,7 @@ const Dashboard = () => {
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-4 py-4 text-sm truncate">
+                <td className="px-4 py-4 text-xs leading-tight">
                   {c.complementoFolha > 0 ? (
                     <span className="text-warning">
                       Aumentar folha em {formatCurrency(c.complementoFolha)}
