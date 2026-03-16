@@ -291,9 +291,12 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.text("R$", colRsX + 2, ty5);
   doc.text(fmtCur(valS5), dX + dW - 3, ty5, { align: "right" });
 
-  // Outer borders + column vertical borders for data area (full height)
+  // Horizontal line separating Simples from Total in data area
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
+  doc.line(dX, y + h5data, dX + dW, y + h5data);
+
+  // Outer borders + column vertical borders for data area (full height)
   doc.line(dX, y, dX + dW, y);                    // top
   doc.line(dX, y, dX, y + h5full);                 // left
   doc.line(dX + dW, y, dX + dW, y + h5full);       // right
