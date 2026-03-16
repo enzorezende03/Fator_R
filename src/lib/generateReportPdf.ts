@@ -322,7 +322,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   y = totalY5 + rh + 12;
 
   // === ECONOMIA BOX ===
-  const boxW = cw * 0.72;
+  const boxW = cw * 0.85;
   const boxX = m + (cw - boxW) / 2;
   const boxH = 45;
 
@@ -348,24 +348,24 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     doc.addImage(iconImg, "PNG", boxX + 8, y + 20, 16, 16);
   } catch (_) { /* skip */ }
 
-  // Economy value
+  // Economy value (left side, leaving room for donut on right)
   doc.setFontSize(28);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0);
   const econStr = economia > 0 ? `R$ ${fmtCur(economia)}` : "R$ 0,00";
   doc.text(econStr, boxX + 28, y + 34);
 
-  // Donut chart
+  // Donut chart (positioned further right to avoid overlap)
   if (econPct > 0) {
     try {
       const donutImg = drawDonut(Math.min(Math.abs(econPct), 100));
-      doc.addImage(donutImg, "PNG", boxX + boxW - 38, y + 16, 30, 30);
+      doc.addImage(donutImg, "PNG", boxX + boxW - 36, y + 16, 28, 28);
     } catch (_) { /* skip */ }
   } else {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(120);
-    doc.text("0%", boxX + boxW - 23, y + 32, { align: "center" });
+    doc.text("0%", boxX + boxW - 22, y + 32, { align: "center" });
   }
 }
 
