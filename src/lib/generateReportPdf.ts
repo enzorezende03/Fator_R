@@ -228,7 +228,6 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX, y, dX, y + h3full);                 // left (full height)
   doc.line(dX + dW, y, dX + dW, y + h3full);       // right (full height)
   doc.line(colPctX, y, colPctX, y + h3full);        // desc | pct (full height)
   doc.line(colRsX, y, colRsX, y + h3full);          // pct | R$ (full height)
@@ -241,13 +240,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
-  doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
   doc.text("R$", colRsX + 2, ty3);
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
 
-  // Bottom border of total row
+  // Total row horizontal separators
   doc.setLineWidth(0.35);
-  doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);
+  doc.line(dX, totalY3, dX + dW, totalY3);            // top separator
+  doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);  // bottom
 
   y = totalY3 + rh + 4;
 
