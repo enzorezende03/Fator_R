@@ -245,10 +245,8 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.text("R$", colRsX + 2, ty3);
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
 
-  // Total row horizontal separator in data area
+  // Bottom border of total row
   doc.setLineWidth(0.35);
-  doc.line(dX, totalY3, dX + dW, totalY3);
-  // Bottom border
   doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);
 
   y = totalY3 + rh + 4;
@@ -314,10 +312,9 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.text("R$", colRsX + 2, tty5);
   doc.text(fmtCur(valS5), dX + dW - 3, tty5, { align: "right" });
 
-  // Total row horizontal separators
+  // Bottom border of total row
   doc.setLineWidth(0.35);
-  doc.line(dX, totalY5, dX + dW, totalY5);            // top separator
-  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);  // bottom
+  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);
 
   y = totalY5 + rh + 12;
 
