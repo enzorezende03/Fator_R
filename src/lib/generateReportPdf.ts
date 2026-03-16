@@ -248,57 +248,69 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   y = totalY3 + rh + 4;
 
   // === ANEXO V ===
-  const r5 = 2;
-  const h5 = r5 * rh;
+  const r5data = 1; // only data row (no Total)
+  const h5data = r5data * rh;
 
   doc.setDrawColor(0);
   doc.setLineWidth(0.35);
-  doc.rect(m, y, c1, h5);
+  doc.rect(m, y, c1, h5data);
 
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0);
-  doc.text("O que era", m + c1 / 2, y + h5 / 2 - 2, { align: "center" });
-  doc.text("pra pagar", m + c1 / 2, y + h5 / 2 + 2, { align: "center" });
+  doc.text("O que era", m + c1 / 2, y + h5data / 2 - 2, { align: "center" });
+  doc.text("pra pagar", m + c1 / 2, y + h5data / 2 + 2, { align: "center" });
 
-  doc.rect(m + c1, y, c2, h5);
+  doc.rect(m + c1, y, c2, h5data);
   doc.setFontSize(9);
-  doc.text("Anexo V", m + c1 + c2 / 2, y + h5 / 2, { align: "center" });
+  doc.text("Anexo V", m + c1 + c2 / 2, y + h5data / 2, { align: "center" });
 
-  const data5 = [
-    { d: "Simples", p: aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", v: fmtCur(valS5), b: false },
-    { d: "Total", p: aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", v: fmtCur(valS5), b: true },
-  ];
+  // Data row (Simples only)
+  const ry5 = y;
+  const ty5 = ry5 + rh / 2 + 1;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(0);
+  doc.text("Simples", dX + 3, ty5);
+  doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, ty5, { align: "right" });
+  doc.text("R$", colRsX + 2, ty5);
+  doc.text(fmtCur(valS5), dX + dW - 3, ty5, { align: "right" });
 
-  data5.forEach((row, i) => {
-    const ry = y + i * rh;
-    const ty = ry + rh / 2 + 1;
+  doc.setLineWidth(0.25);
+  doc.setDrawColor(0);
+  doc.line(dX, ry5 + rh, dX + dW, ry5 + rh);
 
-    doc.setFont("helvetica", row.b ? "bold" : "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(0);
-
-    doc.text(row.d, dX + 3, ty);
-    doc.text(row.p, colPctX + colPctW - 3, ty, { align: "right" });
-    doc.text("R$", colRsX + 2, ty);
-    doc.text(row.v, dX + dW - 3, ty, { align: "right" });
-
-    doc.setLineWidth(row.b ? 0.5 : 0.25);
-    doc.setDrawColor(0);
-    doc.line(dX, ry + rh, dX + dW, ry + rh);
-  });
-
-  // Outer borders + column vertical borders
+  // Outer borders + column vertical borders for data row
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
-  doc.line(dX, y, dX + dW, y);           // top
-  doc.line(dX, y, dX, y + h5);           // left
-  doc.line(dX + dW, y, dX + dW, y + h5); // right
-  doc.line(colPctX, y, colPctX, y + h5); // desc | pct
-  doc.line(colRsX, y, colRsX, y + h5);  // pct | R$
-  // colValX border removed (R$ and value share one cell)
+  doc.line(dX, y, dX + dW, y);                    // top
+  doc.line(dX, y, dX, y + h5data);                 // left
+  doc.line(dX + dW, y, dX + dW, y + h5data);       // right
+  doc.line(colPctX, y, colPctX, y + h5data);        // desc | pct
+  doc.line(colRsX, y, colRsX, y + h5data);          // pct | R$
 
-  y += h5 + 12;
+  // Total row below (full width, no label cell vertical borders)
+  const totalY5 = y + h5data;
+  const tty5 = totalY5 + rh / 2 + 1;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(0);
+  doc.text("Total", dX + 3, tty5);
+  doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
+  doc.text("R$", colRsX + 2, tty5);
+  doc.text(fmtCur(valS5), dX + dW - 3, tty5, { align: "right" });
+
+  // Total row borders
+  doc.setLineWidth(0.35);
+  doc.line(m, totalY5, dX + dW, totalY5);            // top separator
+  doc.line(m, totalY5 + rh, dX + dW, totalY5 + rh);  // bottom
+  doc.line(m, totalY5, m, totalY5 + rh);              // left
+  doc.line(dX + dW, totalY5, dX + dW, totalY5 + rh); // right
+  doc.line(colPctX, totalY5, colPctX, totalY5 + rh);  // desc | pct
+  doc.line(colRsX, totalY5, colRsX, totalY5 + rh);    // pct | R$
+
+  y = totalY5 + rh + 12;
 
   // === ECONOMIA BOX ===
   const boxW = cw * 0.72;
