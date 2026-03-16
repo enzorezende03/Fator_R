@@ -172,13 +172,14 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const colValX = colRsX + colRsW;        // start of value column
 
   // === ANEXO III ===
-  const r3data = 2; // only data rows (no Total)
+  const r3data = 2; // data rows
   const h3data = r3data * rh;
+  const h3full = h3data + rh; // includes total row
 
-  // Label cell 1: "Quanto Paguei"
+  // Label cell 1: "Quanto Paguei" (spans full height including total)
   doc.setDrawColor(0);
   doc.setLineWidth(0.35);
-  doc.rect(m, y, c1, h3data);
+  doc.rect(m, y, c1, h3full);
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
@@ -186,10 +187,14 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.text("Quanto", m + c1 / 2, y + h3data / 2 - 2, { align: "center" });
   doc.text("Paguei", m + c1 / 2, y + h3data / 2 + 2, { align: "center" });
 
-  // Label cell 2: "Anexo III"
-  doc.rect(m + c1, y, c2, h3data);
+  // Label cell 2: "Anexo III" (spans full height including total)
+  doc.rect(m + c1, y, c2, h3full);
   doc.setFontSize(9);
   doc.text("Anexo III", m + c1 + c2 / 2, y + h3data / 2, { align: "center" });
+
+  // Horizontal line separating data rows from total inside label cells
+  doc.setLineWidth(0.35);
+  doc.line(m, y + h3data, m + c1 + c2, y + h3data);
 
   // Data rows (Simples + Pró-labore)
   const data3rows = [
@@ -215,16 +220,16 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     doc.line(dX, ry + rh, dX + dW, ry + rh);
   });
 
-  // Outer borders + column vertical borders for data rows
+  // Outer borders + column vertical borders for data area
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
-  doc.line(dX, y, dX + dW, y);                  // top
-  doc.line(dX, y, dX, y + h3data);               // left
-  doc.line(dX + dW, y, dX + dW, y + h3data);     // right
-  doc.line(colPctX, y, colPctX, y + h3data);      // desc | pct
-  doc.line(colRsX, y, colRsX, y + h3data);        // pct | R$
+  doc.line(dX, y, dX + dW, y);                    // top
+  doc.line(dX, y, dX, y + h3full);                 // left (full height)
+  doc.line(dX + dW, y, dX + dW, y + h3full);       // right (full height)
+  doc.line(colPctX, y, colPctX, y + h3full);        // desc | pct (full height)
+  doc.line(colRsX, y, colRsX, y + h3full);          // pct | R$ (full height)
 
-  // Total row below (full width, no label cell borders)
+  // Total row
   const totalY3 = y + h3data;
   const ty3 = totalY3 + rh / 2 + 1;
 
@@ -236,14 +241,11 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.text("R$", colRsX + 2, ty3);
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
 
-  // Total row borders (spans from m to dX + dW)
+  // Total row horizontal separator in data area
   doc.setLineWidth(0.35);
-  doc.line(m, totalY3, dX + dW, totalY3);            // top (horizontal separator)
-  doc.line(m, totalY3 + rh, dX + dW, totalY3 + rh);  // bottom
-  doc.line(m, totalY3, m, totalY3 + rh);              // left
-  doc.line(dX + dW, totalY3, dX + dW, totalY3 + rh); // right
-  doc.line(colPctX, totalY3, colPctX, totalY3 + rh);  // desc | pct
-  doc.line(colRsX, totalY3, colRsX, totalY3 + rh);    // pct | R$
+  doc.line(dX, totalY3, dX + dW, totalY3);
+  // Bottom border
+  doc.line(dX, totalY3 + rh, dX + dW, totalY3 + rh);
 
   y = totalY3 + rh + 4;
 
