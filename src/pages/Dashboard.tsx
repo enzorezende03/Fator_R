@@ -276,15 +276,15 @@ const Dashboard = () => {
       <div className="w-full rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm table-fixed">
           <colgroup>
-            <col className="w-[4%]" />
-            <col className="w-[18%]" />
-            <col className="w-[8%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
+            <col className="w-[3%]" />
+            <col className="w-[20%]" />
+            <col className="w-[7%]" />
+            <col className="w-[12%]" />
+            <col className="w-[12%]" />
             <col className="w-[10%]" />
-            <col className="w-[13%]" />
-            <col className="w-[14%]" />
-            <col className="w-[5%]" />
+            <col className="w-[11%]" />
+            <col className="w-[21%]" />
+            <col className="w-[4%]" />
           </colgroup>
           <thead>
             <tr className="bg-secondary text-left">
