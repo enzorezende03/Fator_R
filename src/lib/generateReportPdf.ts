@@ -176,7 +176,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const h3data = r3data * rh;
   const h3full = h3data + rh; // includes total row
 
-  // Label cell 1: "Quanto Paguei" (spans full height including total)
+  // Label cell 1: "Quanto Paguei" (spans full height, no horizontal separator)
   doc.setDrawColor(0);
   doc.setLineWidth(0.35);
   doc.rect(m, y, c1, h3full);
@@ -184,17 +184,21 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0);
-  doc.text("Quanto", m + c1 / 2, y + h3data / 2 - 2, { align: "center" });
-  doc.text("Paguei", m + c1 / 2, y + h3data / 2 + 2, { align: "center" });
+  doc.text("Quanto", m + c1 / 2, y + h3full / 2 - 2, { align: "center" });
+  doc.text("Paguei", m + c1 / 2, y + h3full / 2 + 2, { align: "center" });
 
-  // Label cell 2: "Anexo III" (spans full height including total)
+  // Label cell 2: "Anexo III" on top, "Total" on bottom
   doc.rect(m + c1, y, c2, h3full);
   doc.setFontSize(9);
   doc.text("Anexo III", m + c1 + c2 / 2, y + h3data / 2, { align: "center" });
 
-  // Horizontal line separating data rows from total inside label cells
+  // Horizontal line separating Anexo III from Total in cell 2 only
   doc.setLineWidth(0.35);
-  doc.line(m, y + h3data, m + c1 + c2, y + h3data);
+  doc.line(m + c1, y + h3data, m + c1 + c2, y + h3data);
+
+  // "Total" text in cell 2
+  doc.setFontSize(9);
+  doc.text("Total", m + c1 + c2 / 2, y + h3data + rh / 2, { align: "center" });
 
   // Data rows (Simples + Pró-labore)
   const data3rows = [
