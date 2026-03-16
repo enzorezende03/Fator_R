@@ -294,7 +294,6 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX, y, dX, y + h5full);                 // left
   doc.line(dX + dW, y, dX + dW, y + h5full);       // right
   doc.line(colPctX, y, colPctX, y + h5full);        // desc | pct
   doc.line(colRsX, y, colRsX, y + h5full);          // pct | R$
@@ -307,13 +306,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
-  doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
   doc.text("R$", colRsX + 2, tty5);
   doc.text(fmtCur(valS5), dX + dW - 3, tty5, { align: "right" });
 
-  // Bottom border of total row
+  // Total row horizontal separators
   doc.setLineWidth(0.35);
-  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);
+  doc.line(dX, totalY5, dX + dW, totalY5);            // top separator
+  doc.line(dX, totalY5 + rh, dX + dW, totalY5 + rh);  // bottom
 
   y = totalY5 + rh + 12;
 
