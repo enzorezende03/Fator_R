@@ -271,13 +271,13 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(9);
   doc.text("Anexo V", m + c1 + c2 / 2, y + h5data / 2, { align: "center" });
 
-  // Horizontal line separating Anexo V from Total in cell 2 only
+  // Horizontal line separating Anexo V from Total (across cell2 + desc column)
   doc.setLineWidth(0.35);
-  doc.line(m + c1, y + h5data, m + c1 + c2, y + h5data);
+  doc.line(m + c1, y + h5data, colPctX, y + h5data);
 
-  // "Total" text in cell 2
+  // "Total" text centered across cell2 + desc merged area
   doc.setFontSize(9);
-  doc.text("Total", m + c1 + c2 / 2, y + h5data + rh / 2, { align: "center" });
+  doc.text("Total", (m + c1 + colPctX) / 2, y + h5data + rh / 2, { align: "center" });
 
   // Data row (Simples only)
   const ry5 = y;
