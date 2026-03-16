@@ -176,7 +176,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const h3data = r3data * rh;
   const h3full = h3data + rh; // includes total row
 
-  // Label cell 1: "Quanto Paguei" (spans full height including total)
+  // Label cell 1: "Quanto Paguei" (spans full height, no horizontal separator)
   doc.setDrawColor(0);
   doc.setLineWidth(0.35);
   doc.rect(m, y, c1, h3full);
@@ -184,17 +184,21 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0);
-  doc.text("Quanto", m + c1 / 2, y + h3data / 2 - 2, { align: "center" });
-  doc.text("Paguei", m + c1 / 2, y + h3data / 2 + 2, { align: "center" });
+  doc.text("Quanto", m + c1 / 2, y + h3full / 2 - 2, { align: "center" });
+  doc.text("Paguei", m + c1 / 2, y + h3full / 2 + 2, { align: "center" });
 
-  // Label cell 2: "Anexo III" (spans full height including total)
+  // Label cell 2: "Anexo III" on top, "Total" on bottom
   doc.rect(m + c1, y, c2, h3full);
   doc.setFontSize(9);
   doc.text("Anexo III", m + c1 + c2 / 2, y + h3data / 2, { align: "center" });
 
-  // Horizontal line separating data rows from total inside label cells
+  // Horizontal line separating Anexo III from Total in cell 2 only
   doc.setLineWidth(0.35);
-  doc.line(m, y + h3data, m + c1 + c2, y + h3data);
+  doc.line(m + c1, y + h3data, m + c1 + c2, y + h3data);
+
+  // "Total" text in cell 2
+  doc.setFontSize(9);
+  doc.text("Total", m + c1 + c2 / 2, y + h3data + rh / 2, { align: "center" });
 
   // Data rows (Simples + Pró-labore)
   const data3rows = [
@@ -236,7 +240,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(0);
-  doc.text("Total", dX + 3, ty3);
+  doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
   doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
   doc.text("R$", colRsX + 2, ty3);
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
@@ -254,7 +258,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const h5data = r5data * rh;
   const h5full = h5data + rh; // includes total row
 
-  // Label cell 1: "O que era pra pagar" (spans full height including total)
+  // Label cell 1: "O que era pra pagar" (spans full height, no horizontal separator)
   doc.setDrawColor(0);
   doc.setLineWidth(0.35);
   doc.rect(m, y, c1, h5full);
@@ -262,17 +266,21 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0);
-  doc.text("O que era", m + c1 / 2, y + h5data / 2 - 2, { align: "center" });
-  doc.text("pra pagar", m + c1 / 2, y + h5data / 2 + 2, { align: "center" });
+  doc.text("O que era", m + c1 / 2, y + h5full / 2 - 2, { align: "center" });
+  doc.text("pra pagar", m + c1 / 2, y + h5full / 2 + 2, { align: "center" });
 
-  // Label cell 2: "Anexo V" (spans full height including total)
+  // Label cell 2: "Anexo V" on top, "Total" on bottom
   doc.rect(m + c1, y, c2, h5full);
   doc.setFontSize(9);
   doc.text("Anexo V", m + c1 + c2 / 2, y + h5data / 2, { align: "center" });
 
-  // Horizontal line separating data from total inside label cells
+  // Horizontal line separating Anexo V from Total in cell 2 only
   doc.setLineWidth(0.35);
-  doc.line(m, y + h5data, m + c1 + c2, y + h5data);
+  doc.line(m + c1, y + h5data, m + c1 + c2, y + h5data);
+
+  // "Total" text in cell 2
+  doc.setFontSize(9);
+  doc.text("Total", m + c1 + c2 / 2, y + h5data + rh / 2, { align: "center" });
 
   // Data row (Simples only)
   const ry5 = y;
@@ -301,7 +309,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(0);
-  doc.text("Total", dX + 3, tty5);
+  doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
   doc.text(aliqV !== null ? `${aliqV.toFixed(2)}%` : "N/A", colPctX + colPctW - 3, tty5, { align: "right" });
   doc.text("R$", colRsX + 2, tty5);
   doc.text(fmtCur(valS5), dX + dW - 3, tty5, { align: "right" });
