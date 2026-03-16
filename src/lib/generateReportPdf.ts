@@ -228,8 +228,8 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX + dW, y, dX + dW, y + h3data);       // right (data rows only)
-  doc.line(colPctX, y, colPctX, y + h3full);        // desc | pct (full height)
+  doc.line(dX + dW, y, dX + dW, y + h3full);       // right (full height)
+  doc.line(colPctX, y, colPctX, y + h3data);        // desc | pct (data rows only)
   doc.line(colRsX, y, colRsX, y + h3full);          // pct | R$ (full height)
 
   // Total row
