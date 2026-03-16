@@ -333,7 +333,7 @@ const Dashboard = () => {
                   />
                 </td>
                 <td className="px-4 py-4">
-                  <div className="font-medium text-foreground truncate">{c.razao_social}</div>
+                  <div className="font-medium text-foreground text-xs leading-tight break-words">{c.razao_social}</div>
                   <div className="text-xs text-muted-foreground">{formatCNPJ(c.cnpj)}</div>
                 </td>
                 <td className="px-4 py-4 text-foreground">{formatMonth(refDate)}</td>
