@@ -172,42 +172,36 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const colValX = colRsX + colRsW;        // start of value column
 
   // === ANEXO III ===
-  const r3 = 3;
-  const h3 = r3 * rh;
+  const r3data = 2; // only data rows (no Total)
+  const h3data = r3data * rh;
 
   // Label cell 1: "Quanto Paguei"
   doc.setDrawColor(0);
   doc.setLineWidth(0.35);
-  doc.rect(m, y, c1, h3);
+  doc.rect(m, y, c1, h3data);
 
   doc.setFontSize(8);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0);
-  doc.text("Quanto", m + c1 / 2, y + h3 / 2 - 2, { align: "center" });
-  doc.text("Paguei", m + c1 / 2, y + h3 / 2 + 2, { align: "center" });
+  doc.text("Quanto", m + c1 / 2, y + h3data / 2 - 2, { align: "center" });
+  doc.text("Paguei", m + c1 / 2, y + h3data / 2 + 2, { align: "center" });
 
   // Label cell 2: "Anexo III"
-  doc.rect(m + c1, y, c2, h3);
+  doc.rect(m + c1, y, c2, h3data);
   doc.setFontSize(9);
-  doc.text("Anexo III", m + c1 + c2 / 2, y + h3 / 2, { align: "center" });
+  doc.text("Anexo III", m + c1 + c2 / 2, y + h3data / 2, { align: "center" });
 
-  // Data rows - fully bordered
-  const data3 = [
-    { d: "Simples", p: aliqIII !== null ? `${aliqIII.toFixed(2)}%` : "N/A", v: fmtCur(valS3), b: false },
-    { d: "Gastos com Pró-labore", p: `${proLabPct.toFixed(2)}%`, v: fmtCur(data.folhaMes), b: false },
-    { d: "Total", p: `${total3Pct.toFixed(2)}%`, v: fmtCur(total3Val), b: true },
+  // Data rows (Simples + Pró-labore)
+  const data3rows = [
+    { d: "Simples", p: aliqIII !== null ? `${aliqIII.toFixed(2)}%` : "N/A", v: fmtCur(valS3) },
+    { d: "Gastos com Pró-labore", p: `${proLabPct.toFixed(2)}%`, v: fmtCur(data.folhaMes) },
   ];
 
-  // Top border of data area
-  doc.setLineWidth(0.35);
-  doc.setDrawColor(0);
-  doc.line(dX, y, dX + dW, y);
-
-  data3.forEach((row, i) => {
+  data3rows.forEach((row, i) => {
     const ry = y + i * rh;
     const ty = ry + rh / 2 + 1;
 
-    doc.setFont("helvetica", row.b ? "bold" : "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(0);
 
@@ -216,23 +210,42 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
     doc.text("R$", colRsX + 2, ty);
     doc.text(row.v, dX + dW - 3, ty, { align: "right" });
 
-    // Bottom line
-    doc.setLineWidth(row.b ? 0.5 : 0.25);
+    doc.setLineWidth(0.25);
     doc.setDrawColor(0);
     doc.line(dX, ry + rh, dX + dW, ry + rh);
   });
 
-  // Outer borders + column vertical borders
+  // Outer borders + column vertical borders for data rows
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
-  doc.line(dX, y, dX + dW, y);           // top
-  doc.line(dX, y, dX, y + h3);           // left
-  doc.line(dX + dW, y, dX + dW, y + h3); // right
-  doc.line(colPctX, y, colPctX, y + h3); // desc | pct
-  doc.line(colRsX, y, colRsX, y + h3);  // pct | R$
-  // colValX border removed (R$ and value share one cell)
+  doc.line(dX, y, dX + dW, y);                  // top
+  doc.line(dX, y, dX, y + h3data);               // left
+  doc.line(dX + dW, y, dX + dW, y + h3data);     // right
+  doc.line(colPctX, y, colPctX, y + h3data);      // desc | pct
+  doc.line(colRsX, y, colRsX, y + h3data);        // pct | R$
 
-  y += h3 + 4;
+  // Total row below (full width, no label cell borders)
+  const totalY3 = y + h3data;
+  const ty3 = totalY3 + rh / 2 + 1;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(0);
+  doc.text("Total", dX + 3, ty3);
+  doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
+  doc.text("R$", colRsX + 2, ty3);
+  doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
+
+  // Total row borders (spans from m to dX + dW)
+  doc.setLineWidth(0.35);
+  doc.line(m, totalY3, dX + dW, totalY3);            // top (horizontal separator)
+  doc.line(m, totalY3 + rh, dX + dW, totalY3 + rh);  // bottom
+  doc.line(m, totalY3, m, totalY3 + rh);              // left
+  doc.line(dX + dW, totalY3, dX + dW, totalY3 + rh); // right
+  doc.line(colPctX, totalY3, colPctX, totalY3 + rh);  // desc | pct
+  doc.line(colRsX, totalY3, colRsX, totalY3 + rh);    // pct | R$
+
+  y = totalY3 + rh + 4;
 
   // === ANEXO V ===
   const r5 = 2;
