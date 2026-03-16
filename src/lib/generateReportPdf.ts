@@ -233,9 +233,28 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.line(colPctX, y, colPctX, y + h3full);        // desc | pct (full height)
   doc.line(colRsX, y, colRsX, y + h3full);          // pct | R$ (full height)
 
-  // Total row
+  // Total row - green background
   const totalY3 = y + h3data;
   const ty3 = totalY3 + rh / 2 + 1;
+
+  // Fill total row cells with green pastel
+  doc.setFillColor(176, 242, 194); // #B0F2C2
+  doc.rect(m, totalY3, c1, rh, "F");
+  doc.rect(m + c1, totalY3, c2, rh, "F");
+  doc.rect(dX, totalY3, dW, rh, "F");
+
+  // Re-draw borders over the fill
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.35);
+  doc.rect(m, y, c1, h3full);
+  doc.rect(m + c1, y, c2, h3full);
+  doc.line(m + c1, y + h3data, m + c1 + c2, y + h3data);
+
+  // Re-draw "Total" text in cell 2
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0);
+  doc.text("Total", m + c1 + c2 / 2, totalY3 + rh / 2, { align: "center" });
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
