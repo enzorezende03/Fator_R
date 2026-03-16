@@ -128,8 +128,8 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const proLabPct = data.faturamentoMes > 0 ? (data.folhaMes / data.faturamentoMes) * 100 : 0;
   const total3Val = valS3 + data.folhaMes;
   const total3Pct = (aliqIII ?? 0) + proLabPct;
-  const economia = valS5 - total3Val;
-  const econPct = valS5 > 0 ? (economia / valS5) * 100 : 0;
+  const economia = total3Val - valS5;
+  const econPct = total3Val > 0 ? (economia / total3Val) * 100 : 0;
 
   // === HEADER ===
   // Logo
