@@ -228,7 +228,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX + dW, y, dX + dW, y + h3full);       // right (full height)
+  doc.line(dX + dW, y, dX + dW, y + h3data);       // right (data rows only)
   doc.line(colPctX, y, colPctX, y + h3full);        // desc | pct (full height)
   doc.line(colRsX, y, colRsX, y + h3full);          // pct | R$ (full height)
 
@@ -294,7 +294,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX + dW, y, dX + dW, y + h5full);       // right
+  doc.line(dX + dW, y, dX + dW, y + h5data);       // right (data rows only)
   doc.line(colPctX, y, colPctX, y + h5full);        // desc | pct
   doc.line(colRsX, y, colRsX, y + h5full);          // pct | R$
 
