@@ -240,7 +240,7 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(0);
-  doc.text("Total", dX + 3, ty3);
+  doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
   doc.text(`${total3Pct.toFixed(2)}%`, colPctX + colPctW - 3, ty3, { align: "right" });
   doc.text("R$", colRsX + 2, ty3);
   doc.text(fmtCur(total3Val), dX + dW - 3, ty3, { align: "right" });
