@@ -294,9 +294,9 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   doc.setLineWidth(0.35);
   doc.setDrawColor(0);
   doc.line(dX, y, dX + dW, y);                    // top
-  doc.line(dX + dW, y, dX + dW, y + h5data);       // right (data rows only)
-  doc.line(colPctX, y, colPctX, y + h5full);        // desc | pct
-  doc.line(colRsX, y, colRsX, y + h5full);          // pct | R$
+  doc.line(dX + dW, y, dX + dW, y + h5full);       // right (full height)
+  doc.line(colPctX, y, colPctX, y + h5data);        // desc | pct (data rows only)
+  doc.line(colRsX, y, colRsX, y + h5full);          // pct | R$ (full height)
 
   // Total row
   const totalY5 = y + h5data;
