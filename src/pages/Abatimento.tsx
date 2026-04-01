@@ -418,7 +418,7 @@ const Abatimento = () => {
                     const reportData: ReportData = {
                       razaoSocial: client.razao_social,
                       cnpj: client.cnpj,
-                      competencia: formatMonth(addMonths(refDate, 1)),
+                      competencia: formatMonth(refDate),
                       rbt12: totalRba,
                       faturamentoMes: endData ? Number(endData.faturamento) : 0,
                       folhaMes: endData ? Number(endData.folha_salarios) : 0,
