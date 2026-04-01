@@ -391,6 +391,20 @@ const Abatimento = () => {
                   </p>
                 </div>
               )}
+              {totalRba > 0 && !isAnexoIII && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Complemento de Folha p/ 28%</p>
+                  <p className="text-2xl font-bold text-warning">
+                    R$ {formatBRL(totalRba * 0.28 - totalFolha)}
+                  </p>
+                </div>
+              )}
+              {totalRba > 0 && isAnexoIII && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Complemento de Folha p/ 28%</p>
+                  <p className="text-2xl font-bold text-success">—</p>
+                </div>
+              )}
             </div>
             <button
               onClick={() => saveMutation.mutate()}
