@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Save, ChevronLeft, ChevronRight, ChevronsUpDown, Check, Upload } from "lucide-react";
+import { Save, ChevronLeft, ChevronRight, ChevronsUpDown, Check, Upload, FileText } from "lucide-react";
+import { generateReportPdf, type ReportData } from "@/lib/generateReportPdf";
 import { parseCartaFaturamento } from "@/lib/parseCartaFaturamento";
 import { calcularAliquotaEfetiva } from "@/lib/aliquotaEfetiva";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -406,14 +407,41 @@ const Abatimento = () => {
                 </div>
               )}
             </div>
-            <button
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              {saveMutation.isPending ? "Salvando..." : "Salvar Dados"}
-            </button>
+            <div className="flex items-center gap-3">
+              {totalRba > 0 && selectedClientId && (
+                <button
+                  onClick={async () => {
+                    const client = clients.find((c) => c.id === selectedClientId);
+                    if (!client) return;
+                    const endKey = toISODate(months[11]);
+                    const endData = monthlyRows.find((d) => d.mes_referencia === endKey);
+                    const reportData: ReportData = {
+                      razaoSocial: client.razao_social,
+                      cnpj: client.cnpj,
+                      competencia: formatMonth(addMonths(refDate, 1)),
+                      rbt12: totalRba,
+                      faturamentoMes: endData ? Number(endData.faturamento) : 0,
+                      folhaMes: endData ? Number(endData.folha_salarios) : 0,
+                    };
+                    const doc = await generateReportPdf(reportData);
+                    doc.save(`relatorio_fator_r_${client.razao_social.replace(/\s+/g, "_")}.pdf`);
+                    toast.success("Relatório PDF gerado com sucesso!");
+                  }}
+                  className="flex items-center gap-2 border border-border text-foreground px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  Relatório PDF
+                </button>
+              )}
+              <button
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {saveMutation.isPending ? "Salvando..." : "Salvar Dados"}
+              </button>
+            </div>
           </div>
         </>
       )}
