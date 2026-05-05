@@ -285,14 +285,15 @@ const Clientes = () => {
           .maybeSingle();
 
         let clientId: string;
+        const razaoUpper = (data.razaoSocial || "").trim().toUpperCase();
         if (existing) {
           clientId = existing.id;
           updatedClients++;
-          // Atualiza razão social caso esteja diferente
-          if (data.razaoSocial && data.razaoSocial !== existing.razao_social) {
+          // Atualiza razão social caso esteja diferente (sempre em CAIXA ALTA conforme recibo)
+          if (razaoUpper && razaoUpper !== (existing.razao_social || "").toUpperCase()) {
             await supabase
               .from("clients")
-              .update({ razao_social: data.razaoSocial })
+              .update({ razao_social: razaoUpper })
               .eq("id", clientId);
           }
         } else {
@@ -300,7 +301,7 @@ const Clientes = () => {
             .from("clients")
             .insert({
               cnpj: cnpjDigits,
-              razao_social: data.razaoSocial || `Cliente ${cnpjDigits}`,
+              razao_social: razaoUpper || `CLIENTE ${cnpjDigits}`,
               created_by: user?.id,
             })
             .select("id")
