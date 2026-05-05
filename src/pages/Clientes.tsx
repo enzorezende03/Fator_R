@@ -230,7 +230,7 @@ const Clientes = () => {
 
     const mapped = rows
       .map((row) => ({
-        razao_social: String(row["Razão Social"] || row["razao_social"] || row["RAZAO_SOCIAL"] || row["Empresa"] || "").trim(),
+        razao_social: String(row["Razão Social"] || row["razao_social"] || row["RAZAO_SOCIAL"] || row["Empresa"] || "").trim().toUpperCase(),
         cnpj: String(row["CNPJ"] || row["cnpj"] || "").replace(/\D/g, ""),
         created_by: user?.id,
       }))
