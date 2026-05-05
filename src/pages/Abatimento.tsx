@@ -560,6 +560,48 @@ const Abatimento = () => {
           </div>
         </>
       )}
+
+      <Dialog open={!!batchResults} onOpenChange={(o) => !o && setBatchResults(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Relatório da Importação em Lote</DialogTitle>
+            <DialogDescription>
+              {batchResults && (
+                <>
+                  Total: {batchResults.length} • Sucesso: {batchResults.filter(r => r.status === "success").length} • Criados: {batchResults.filter(r => r.status === "created").length} • Erros: {batchResults.filter(r => r.status === "error").length}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-4">
+            {batchResults?.map((r, idx) => (
+              <div key={idx} className={cn(
+                "p-3 rounded-lg border text-sm",
+                r.status === "error" ? "border-destructive/40 bg-destructive/5" :
+                r.status === "created" ? "border-warning/40 bg-warning/5" :
+                "border-success/40 bg-success/5"
+              )}>
+                <div className="font-medium text-foreground">{r.fileName}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {r.cnpj && <>CNPJ: {r.cnpj} • </>}
+                  {r.razaoSocial && <>{r.razaoSocial} • </>}
+                  {r.status === "success" && <>Importado ({r.monthsImported} meses)</>}
+                  {r.status === "created" && <>Cliente criado e importado ({r.monthsImported} meses)</>}
+                  {r.status === "error" && <span className="text-destructive">Erro: {r.message}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setBatchResults(null)}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            >
+              Fechar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
