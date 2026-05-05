@@ -9,7 +9,17 @@ import { calcularAliquotaEfetiva } from "@/lib/aliquotaEfetiva";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+
+type BatchResult = {
+  fileName: string;
+  status: "success" | "created" | "error";
+  cnpj?: string;
+  razaoSocial?: string;
+  monthsImported?: number;
+  message?: string;
+};
 
 const formatMonth = (date: Date) => {
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -83,6 +93,9 @@ const Abatimento = () => {
   const [rbaValues, setRbaValues] = useState<Record<string, string>>({});
   const [faturamentoMesFolha, setFaturamentoMesFolha] = useState("");
   const [faturamentoMesRba, setFaturamentoMesRba] = useState("");
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchResult[] | null>(null);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   // Initialize from DB data
   useEffect(() => {
@@ -228,6 +241,108 @@ const Abatimento = () => {
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+
+        <label className={cn(
+          "flex items-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors whitespace-nowrap",
+          batchProcessing && "opacity-50 cursor-not-allowed"
+        )}>
+          <Upload className="w-4 h-4" />
+          {batchProcessing ? `Importando ${batchProgress.current}/${batchProgress.total}...` : "Importar em Lote"}
+          <input
+            type="file"
+            accept=".pdf"
+            multiple
+            disabled={batchProcessing}
+            className="hidden"
+            onChange={async (e) => {
+              const files = Array.from(e.target.files || []);
+              if (!files.length || !user) { e.target.value = ""; return; }
+              setBatchProcessing(true);
+              setBatchProgress({ current: 0, total: files.length });
+              const results: BatchResult[] = [];
+
+              const { data: allClients } = await supabase.from("clients").select("id, cnpj, razao_social");
+              const clientMap = new Map((allClients || []).map((c) => [c.cnpj.replace(/\D/g, ""), c]));
+
+              for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                setBatchProgress({ current: i + 1, total: files.length });
+                try {
+                  const data = await parseCartaFaturamento(file);
+                  const cnpjClean = (data.cnpj || "").replace(/\D/g, "");
+                  if (!cnpjClean) {
+                    results.push({ fileName: file.name, status: "error", message: "CNPJ não identificado" });
+                    continue;
+                  }
+                  if (data.rows.length === 0) {
+                    results.push({ fileName: file.name, status: "error", cnpj: cnpjClean, message: "Nenhum dado de competência encontrado" });
+                    continue;
+                  }
+
+                  let client = clientMap.get(cnpjClean);
+                  let created = false;
+                  if (!client) {
+                    const { data: newClient, error: insErr } = await supabase
+                      .from("clients")
+                      .insert({ cnpj: cnpjClean, razao_social: `EMPRESA ${cnpjClean}`, created_by: user.id })
+                      .select("id, cnpj, razao_social")
+                      .single();
+                    if (insErr || !newClient) {
+                      results.push({ fileName: file.name, status: "error", cnpj: cnpjClean, message: "Falha ao criar cliente" });
+                      continue;
+                    }
+                    client = newClient;
+                    clientMap.set(cnpjClean, newClient);
+                    created = true;
+                  }
+
+                  // Upsert monthly_data
+                  const { data: existing } = await supabase
+                    .from("monthly_data")
+                    .select("id, mes_referencia")
+                    .eq("client_id", client.id)
+                    .in("mes_referencia", data.rows.map((r) => r.mesReferencia));
+                  const existingMap = new Map((existing || []).map((e) => [e.mes_referencia, e.id]));
+
+                  const updates = data.rows.filter((r) => existingMap.has(r.mesReferencia)).map((r) => ({
+                    id: existingMap.get(r.mesReferencia)!,
+                    client_id: client!.id,
+                    mes_referencia: r.mesReferencia,
+                    folha_salarios: r.folhaSalarios,
+                    faturamento: r.faturamento,
+                    created_by: user.id,
+                  }));
+                  const inserts = data.rows.filter((r) => !existingMap.has(r.mesReferencia)).map((r) => ({
+                    client_id: client!.id,
+                    mes_referencia: r.mesReferencia,
+                    folha_salarios: r.folhaSalarios,
+                    faturamento: r.faturamento,
+                    created_by: user.id,
+                  }));
+                  if (updates.length) await supabase.from("monthly_data").upsert(updates, { onConflict: "id" });
+                  if (inserts.length) await supabase.from("monthly_data").insert(inserts);
+
+                  results.push({
+                    fileName: file.name,
+                    status: created ? "created" : "success",
+                    cnpj: cnpjClean,
+                    razaoSocial: client.razao_social,
+                    monthsImported: data.rows.length,
+                  });
+                } catch (err: any) {
+                  results.push({ fileName: file.name, status: "error", message: err?.message || "Erro ao processar PDF" });
+                }
+              }
+
+              setBatchProcessing(false);
+              setBatchResults(results);
+              queryClient.invalidateQueries({ queryKey: ["clients"] });
+              queryClient.invalidateQueries({ queryKey: ["monthly_data_abatimento"] });
+              queryClient.invalidateQueries({ queryKey: ["monthly_data"] });
+              e.target.value = "";
+            }}
+          />
+        </label>
 
         {selectedClientId && (
           <label className="flex items-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors whitespace-nowrap">
@@ -445,6 +560,48 @@ const Abatimento = () => {
           </div>
         </>
       )}
+
+      <Dialog open={!!batchResults} onOpenChange={(o) => !o && setBatchResults(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Relatório da Importação em Lote</DialogTitle>
+            <DialogDescription>
+              {batchResults && (
+                <>
+                  Total: {batchResults.length} • Sucesso: {batchResults.filter(r => r.status === "success").length} • Criados: {batchResults.filter(r => r.status === "created").length} • Erros: {batchResults.filter(r => r.status === "error").length}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-4">
+            {batchResults?.map((r, idx) => (
+              <div key={idx} className={cn(
+                "p-3 rounded-lg border text-sm",
+                r.status === "error" ? "border-destructive/40 bg-destructive/5" :
+                r.status === "created" ? "border-warning/40 bg-warning/5" :
+                "border-success/40 bg-success/5"
+              )}>
+                <div className="font-medium text-foreground">{r.fileName}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {r.cnpj && <>CNPJ: {r.cnpj} • </>}
+                  {r.razaoSocial && <>{r.razaoSocial} • </>}
+                  {r.status === "success" && <>Importado ({r.monthsImported} meses)</>}
+                  {r.status === "created" && <>Cliente criado e importado ({r.monthsImported} meses)</>}
+                  {r.status === "error" && <span className="text-destructive">Erro: {r.message}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setBatchResults(null)}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
+            >
+              Fechar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
