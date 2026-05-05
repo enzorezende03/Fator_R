@@ -415,9 +415,11 @@ const Clientes = () => {
               <input
                 required
                 value={form.razao_social}
-                onChange={(e) => setForm({ ...form, razao_social: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => setForm({ ...form, razao_social: e.target.value.toUpperCase() })}
+                placeholder="NOME COMPLETO DA EMPRESA"
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground uppercase focus:outline-none focus:ring-2 focus:ring-ring"
               />
+              <p className="text-xs text-muted-foreground mt-1">O nome será gravado em CAIXA ALTA conforme padrão oficial.</p>
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-muted-foreground mb-1">CNPJ</label>
