@@ -106,7 +106,7 @@ const Clientes = () => {
       } else {
         const { data, error } = await supabase
           .from("clients")
-          .insert({ ...values, created_by: user?.id })
+          .insert({ ...normalized, created_by: user?.id })
           .select("id")
           .single();
         if (error) throw error;
