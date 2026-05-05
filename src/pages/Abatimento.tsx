@@ -9,7 +9,17 @@ import { calcularAliquotaEfetiva } from "@/lib/aliquotaEfetiva";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+
+type BatchResult = {
+  fileName: string;
+  status: "success" | "created" | "error";
+  cnpj?: string;
+  razaoSocial?: string;
+  monthsImported?: number;
+  message?: string;
+};
 
 const formatMonth = (date: Date) => {
   const m = String(date.getMonth() + 1).padStart(2, "0");
