@@ -154,7 +154,9 @@ const Clientes = () => {
       resetForm();
     },
     onError: (err: any) => {
-      if (err.message?.includes("duplicate")) {
+      if (err.message === "INVALID_NAME") {
+        toast.error("Razão Social inválida. Informe o nome completo da empresa.");
+      } else if (err.message?.includes("duplicate")) {
         toast.error("CNPJ já cadastrado!");
       } else {
         toast.error("Erro ao salvar cliente");
