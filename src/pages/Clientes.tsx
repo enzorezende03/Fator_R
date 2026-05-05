@@ -90,10 +90,17 @@ const Clientes = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (values: typeof form) => {
+      const normalized = {
+        ...values,
+        razao_social: (values.razao_social || "").trim().toUpperCase(),
+      };
+      if (!normalized.razao_social || normalized.razao_social.length < 3) {
+        throw new Error("INVALID_NAME");
+      }
       let clientId: string;
 
       if (editingId) {
-        const { error } = await supabase.from("clients").update(values).eq("id", editingId);
+        const { error } = await supabase.from("clients").update(normalized).eq("id", editingId);
         if (error) throw error;
         clientId = editingId;
       } else {
