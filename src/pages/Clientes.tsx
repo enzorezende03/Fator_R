@@ -481,27 +481,63 @@ const Clientes = () => {
               <tr className="bg-secondary">
                 <th className="text-left px-5 py-3 font-semibold text-foreground">Razão Social</th>
                 <th className="text-left px-5 py-3 font-semibold text-foreground">CNPJ</th>
-                <th className="px-5 py-3 w-16"></th>
+                <th className="text-left px-5 py-3 font-semibold text-foreground w-24">Status</th>
+                <th className="px-5 py-3 w-32"></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((client) => (
-                <tr key={client.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                  <td className="px-5 py-3 font-medium text-foreground">{client.razao_social}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{formatCNPJ(client.cnpj)}</td>
-                  <td className="px-5 py-3">
-                    <button
-                      onClick={() => handleEdit(client)}
-                      className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map((client) => {
+                const isActive = client.active !== false;
+                return (
+                  <tr key={client.id} className={`border-t border-border hover:bg-muted/30 transition-colors ${!isActive ? "opacity-60" : ""}`}>
+                    <td className="px-5 py-3 font-medium text-foreground">{client.razao_social}</td>
+                    <td className="px-5 py-3 text-muted-foreground">{formatCNPJ(client.cnpj)}</td>
+                    <td className="px-5 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {isActive ? "Ativo" : "Inativo"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(client)}
+                          title="Editar"
+                          className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmDialog({ type: isActive ? "deactivate" : "activate", client })}
+                          title={isActive ? "Desativar" : "Reativar"}
+                          className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                        >
+                          {isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const { count } = await supabase
+                              .from("monthly_data")
+                              .select("id", { count: "exact", head: true })
+                              .eq("client_id", client.id);
+                            if ((count ?? 0) > 0) {
+                              setConfirmDialog({ type: "blocked", client });
+                            } else {
+                              setConfirmDialog({ type: "delete", client });
+                            }
+                          }}
+                          title="Excluir"
+                          className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-5 py-12 text-center text-muted-foreground">
+                  <td colSpan={4} className="px-5 py-12 text-center text-muted-foreground">
                     {search ? "Nenhum cliente encontrado" : "Nenhum cliente cadastrado"}
                   </td>
                 </tr>
@@ -510,6 +546,61 @@ const Clientes = () => {
           </table>
         </div>
       )}
+
+      <AlertDialog open={!!confirmDialog} onOpenChange={(o) => !o && setConfirmDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog?.type === "delete" && "Excluir cliente?"}
+              {confirmDialog?.type === "deactivate" && "Desativar cliente?"}
+              {confirmDialog?.type === "activate" && "Reativar cliente?"}
+              {confirmDialog?.type === "blocked" && "Exclusão bloqueada"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog?.type === "delete" &&
+                `Esta ação removerá permanentemente "${confirmDialog.client.razao_social}". Não poderá ser desfeita.`}
+              {confirmDialog?.type === "deactivate" &&
+                `O cliente "${confirmDialog.client.razao_social}" será marcado como inativo. O histórico será mantido.`}
+              {confirmDialog?.type === "activate" &&
+                `O cliente "${confirmDialog.client.razao_social}" voltará a ficar ativo no sistema.`}
+              {confirmDialog?.type === "blocked" &&
+                `O cliente "${confirmDialog.client.razao_social}" possui declarações/dados vinculados e não pode ser excluído. Você pode desativá-lo para manter o histórico.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            {confirmDialog?.type === "delete" && (
+              <AlertDialogAction
+                onClick={() => { deleteMutation.mutate(confirmDialog.client.id); setConfirmDialog(null); }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            )}
+            {confirmDialog?.type === "deactivate" && (
+              <AlertDialogAction
+                onClick={() => { toggleActiveMutation.mutate({ id: confirmDialog.client.id, active: false }); setConfirmDialog(null); }}
+              >
+                Desativar
+              </AlertDialogAction>
+            )}
+            {confirmDialog?.type === "activate" && (
+              <AlertDialogAction
+                onClick={() => { toggleActiveMutation.mutate({ id: confirmDialog.client.id, active: true }); setConfirmDialog(null); }}
+              >
+                Reativar
+              </AlertDialogAction>
+            )}
+            {confirmDialog?.type === "blocked" && (
+              <AlertDialogAction
+                onClick={() => { toggleActiveMutation.mutate({ id: confirmDialog.client.id, active: false }); setConfirmDialog(null); }}
+              >
+                Desativar
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
