@@ -312,7 +312,21 @@ const Clientes = () => {
           <h1 className="font-display text-3xl font-bold text-foreground mb-1">Clientes</h1>
           <p className="text-sm text-muted-foreground">{clients.length} clientes cadastrados</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          <label className={`flex items-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors ${batchImporting ? "opacity-60 pointer-events-none" : ""}`}>
+            <FileStack className="w-4 h-4" />
+            {batchImporting
+              ? `Importando ${batchProgress.done}/${batchProgress.total}...`
+              : "Importar Declarações em Lote"}
+            <input
+              type="file"
+              accept=".pdf"
+              multiple
+              onChange={handleBatchPgdas}
+              disabled={batchImporting}
+              className="hidden"
+            />
+          </label>
           <label className="flex items-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors">
             <Upload className="w-4 h-4" />
             Importar Excel
