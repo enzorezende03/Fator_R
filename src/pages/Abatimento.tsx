@@ -93,6 +93,9 @@ const Abatimento = () => {
   const [rbaValues, setRbaValues] = useState<Record<string, string>>({});
   const [faturamentoMesFolha, setFaturamentoMesFolha] = useState("");
   const [faturamentoMesRba, setFaturamentoMesRba] = useState("");
+  const [batchProcessing, setBatchProcessing] = useState(false);
+  const [batchResults, setBatchResults] = useState<BatchResult[] | null>(null);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   // Initialize from DB data
   useEffect(() => {
