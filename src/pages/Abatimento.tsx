@@ -110,6 +110,8 @@ const Abatimento = () => {
     });
     setFolhaValues(folha);
     setRbaValues(rba);
+    const competenciaKey = toISODate(months[11]);
+    setFaturamentoMesRba(rba[competenciaKey] || "");
   }, [monthlyRows, months, selectedClientId]);
 
   const saveMutation = useMutation({
