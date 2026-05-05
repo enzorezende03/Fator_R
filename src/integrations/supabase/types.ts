@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       clients: {
         Row: {
+          active: boolean
           cnpj: string
           created_at: string
           created_by: string | null
@@ -26,6 +27,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active?: boolean
           cnpj: string
           created_at?: string
           created_by?: string | null
@@ -36,6 +38,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active?: boolean
           cnpj?: string
           created_at?: string
           created_by?: string | null
