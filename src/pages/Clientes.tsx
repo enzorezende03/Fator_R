@@ -90,16 +90,23 @@ const Clientes = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (values: typeof form) => {
+      const normalized = {
+        ...values,
+        razao_social: (values.razao_social || "").trim().toUpperCase(),
+      };
+      if (!normalized.razao_social || normalized.razao_social.length < 3) {
+        throw new Error("INVALID_NAME");
+      }
       let clientId: string;
 
       if (editingId) {
-        const { error } = await supabase.from("clients").update(values).eq("id", editingId);
+        const { error } = await supabase.from("clients").update(normalized).eq("id", editingId);
         if (error) throw error;
         clientId = editingId;
       } else {
         const { data, error } = await supabase
           .from("clients")
-          .insert({ ...values, created_by: user?.id })
+          .insert({ ...normalized, created_by: user?.id })
           .select("id")
           .single();
         if (error) throw error;
@@ -147,7 +154,9 @@ const Clientes = () => {
       resetForm();
     },
     onError: (err: any) => {
-      if (err.message?.includes("duplicate")) {
+      if (err.message === "INVALID_NAME") {
+        toast.error("Razão Social inválida. Informe o nome completo da empresa.");
+      } else if (err.message?.includes("duplicate")) {
         toast.error("CNPJ já cadastrado!");
       } else {
         toast.error("Erro ao salvar cliente");
@@ -221,7 +230,7 @@ const Clientes = () => {
 
     const mapped = rows
       .map((row) => ({
-        razao_social: String(row["Razão Social"] || row["razao_social"] || row["RAZAO_SOCIAL"] || row["Empresa"] || "").trim(),
+        razao_social: String(row["Razão Social"] || row["razao_social"] || row["RAZAO_SOCIAL"] || row["Empresa"] || "").trim().toUpperCase(),
         cnpj: String(row["CNPJ"] || row["cnpj"] || "").replace(/\D/g, ""),
         created_by: user?.id,
       }))
@@ -276,14 +285,15 @@ const Clientes = () => {
           .maybeSingle();
 
         let clientId: string;
+        const razaoUpper = (data.razaoSocial || "").trim().toUpperCase();
         if (existing) {
           clientId = existing.id;
           updatedClients++;
-          // Atualiza razão social caso esteja diferente
-          if (data.razaoSocial && data.razaoSocial !== existing.razao_social) {
+          // Atualiza razão social caso esteja diferente (sempre em CAIXA ALTA conforme recibo)
+          if (razaoUpper && razaoUpper !== (existing.razao_social || "").toUpperCase()) {
             await supabase
               .from("clients")
-              .update({ razao_social: data.razaoSocial })
+              .update({ razao_social: razaoUpper })
               .eq("id", clientId);
           }
         } else {
@@ -291,7 +301,7 @@ const Clientes = () => {
             .from("clients")
             .insert({
               cnpj: cnpjDigits,
-              razao_social: data.razaoSocial || `Cliente ${cnpjDigits}`,
+              razao_social: razaoUpper || `CLIENTE ${cnpjDigits}`,
               created_by: user?.id,
             })
             .select("id")
@@ -406,9 +416,11 @@ const Clientes = () => {
               <input
                 required
                 value={form.razao_social}
-                onChange={(e) => setForm({ ...form, razao_social: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                onChange={(e) => setForm({ ...form, razao_social: e.target.value.toUpperCase() })}
+                placeholder="NOME COMPLETO DA EMPRESA"
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground uppercase focus:outline-none focus:ring-2 focus:ring-ring"
               />
+              <p className="text-xs text-muted-foreground mt-1">O nome será gravado em CAIXA ALTA conforme padrão oficial.</p>
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-muted-foreground mb-1">CNPJ</label>
