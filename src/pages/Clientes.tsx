@@ -40,6 +40,20 @@ const Clientes = () => {
     | null
   >(null);
 
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is_admin", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user?.id,
+  });
+
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
@@ -518,30 +532,34 @@ const Clientes = () => {
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => setConfirmDialog({ type: isActive ? "deactivate" : "activate", client })}
-                          title={isActive ? "Desativar" : "Reativar"}
-                          className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
-                        >
-                          {isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const { count } = await supabase
-                              .from("monthly_data")
-                              .select("id", { count: "exact", head: true })
-                              .eq("client_id", client.id);
-                            if ((count ?? 0) > 0) {
-                              setConfirmDialog({ type: "blocked", client });
-                            } else {
-                              setConfirmDialog({ type: "delete", client });
-                            }
-                          }}
-                          title="Excluir"
-                          className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setConfirmDialog({ type: isActive ? "deactivate" : "activate", client })}
+                            title={isActive ? "Desativar" : "Reativar"}
+                            className="p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-colors"
+                          >
+                            {isActive ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={async () => {
+                              const { count } = await supabase
+                                .from("monthly_data")
+                                .select("id", { count: "exact", head: true })
+                                .eq("client_id", client.id);
+                              if ((count ?? 0) > 0) {
+                                setConfirmDialog({ type: "blocked", client });
+                              } else {
+                                setConfirmDialog({ type: "delete", client });
+                              }
+                            }}
+                            title="Excluir"
+                            className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
