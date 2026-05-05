@@ -6,7 +6,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 export interface PgdasData {
   cnpj: string; // digits only (basic or full)
   cnpjFull: string; // formatted
+  razaoSocial: string;
   periodoApuracao: string; // MM/YYYY
+  numeroRecibo: string;
+  numeroDeclaracao: string;
+  dataTransmissao: string;
+  receitaPa: number; // Receita Bruta do PA
+  rbt12: number; // Receita Bruta dos 12 meses anteriores
+  rba: number; // Receita Bruta Acumulada no ano
   receitasMensais: Record<string, number>; // "YYYY-MM-01" -> value
   folhaMensais: Record<string, number>; // "YYYY-MM-01" -> value
 }
