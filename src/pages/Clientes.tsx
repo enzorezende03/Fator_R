@@ -35,6 +35,10 @@ const Clientes = () => {
   const [form, setForm] = useState({ razao_social: "", cnpj: "" });
   const [pgdasData, setPgdasData] = useState<PgdasData | null>(null);
   const [importingPdf, setImportingPdf] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<
+    | { type: "delete" | "deactivate" | "activate" | "blocked"; client: any }
+    | null
+  >(null);
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ["clients"],
@@ -46,6 +50,42 @@ const Clientes = () => {
       if (error) throw error;
       return data;
     },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (clientId: string) => {
+      const { count, error: cErr } = await supabase
+        .from("monthly_data")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", clientId);
+      if (cErr) throw cErr;
+      if ((count ?? 0) > 0) throw new Error("HAS_DATA");
+      const { error } = await supabase.from("clients").delete().eq("id", clientId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Cliente excluído!");
+    },
+    onError: (err: any) => {
+      if (err.message === "HAS_DATA") {
+        toast.error("Cliente possui dados vinculados. Use a desativação.");
+      } else {
+        toast.error("Erro ao excluir cliente");
+      }
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      const { error } = await supabase.from("clients").update({ active }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      toast.success(vars.active ? "Cliente reativado!" : "Cliente desativado!");
+    },
+    onError: () => toast.error("Erro ao alterar status"),
   });
 
   const saveMutation = useMutation({
