@@ -6,7 +6,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 export interface PgdasData {
   cnpj: string; // digits only (basic or full)
   cnpjFull: string; // formatted
+  razaoSocial: string;
   periodoApuracao: string; // MM/YYYY
+  numeroRecibo: string;
+  numeroDeclaracao: string;
+  dataTransmissao: string;
+  receitaPa: number; // Receita Bruta do PA
+  rbt12: number; // Receita Bruta dos 12 meses anteriores
+  rba: number; // Receita Bruta Acumulada no ano
   receitasMensais: Record<string, number>; // "YYYY-MM-01" -> value
   folhaMensais: Record<string, number>; // "YYYY-MM-01" -> value
 }
@@ -58,32 +65,62 @@ export const parsePgdasPdf = async (file: File): Promise<PgdasData> => {
     fullText += pageText + "\n";
   }
 
-  // Extract CNPJ - look for "CNPJ Básico:" or "CNPJ Estabelecimento:"
+  // Extract CNPJ - try Matriz, Estabelecimento, then Básico
   let cnpjFull = "";
+  const cnpjMatrizMatch = fullText.match(/CNPJ\s*Matriz\s*:?\s*([\d.\/\-]+)/i);
   const cnpjEstMatch = fullText.match(/CNPJ\s*(?:Estabelecimento|do Estabelecimento)\s*:?\s*([\d.\/\-]+)/i);
   const cnpjBasicoMatch = fullText.match(/CNPJ\s*B[aá]sico\s*:?\s*([\d.]+)/i);
-  
-  if (cnpjEstMatch) {
-    cnpjFull = cnpjEstMatch[1].trim();
-  } else if (cnpjBasicoMatch) {
-    cnpjFull = cnpjBasicoMatch[1].trim();
-  }
+
+  if (cnpjMatrizMatch) cnpjFull = cnpjMatrizMatch[1].trim();
+  else if (cnpjEstMatch) cnpjFull = cnpjEstMatch[1].trim();
+  else if (cnpjBasicoMatch) cnpjFull = cnpjBasicoMatch[1].trim();
 
   const cnpj = cnpjFull.replace(/\D/g, "");
 
-  // Extract PA (Período de Apuração)
-  const paMatch = fullText.match(/Per[ií]odo\s*de\s*Apura[çc][aã]o\s*\(PA\)\s*:?\s*(\d{2}\/\d{4})/i);
-  const periodoApuracao = paMatch ? paMatch[1] : "";
+  // Razão social ("Nome empresarial:")
+  const nomeMatch = fullText.match(/Nome\s+empresarial\s*:?\s*([^\n]+?)(?:\s+Data\s+de\s+abertura|\s{3,}|\n)/i);
+  const razaoSocial = nomeMatch ? nomeMatch[1].trim() : "";
 
-  // Split text into sections
-  // Find "Receitas Brutas Anteriores" section (2.2.1 Mercado Interno)
+  // Período de Apuração - aceita "(PA): MM/YYYY" ou "DD/MM/YYYY a DD/MM/YYYY"
+  let periodoApuracao = "";
+  const paRangeMatch = fullText.match(/Per[ií]odo\s*de\s*Apura[çc][aã]o\s*:?\s*\d{2}\/(\d{2})\/(\d{4})\s*a\s*\d{2}\/\d{2}\/\d{4}/i);
+  const paShortMatch = fullText.match(/Per[ií]odo\s*de\s*Apura[çc][aã]o\s*\(PA\)\s*:?\s*(\d{2}\/\d{4})/i);
+  if (paRangeMatch) periodoApuracao = `${paRangeMatch[1]}/${paRangeMatch[2]}`;
+  else if (paShortMatch) periodoApuracao = paShortMatch[1];
+
+  // Número do Recibo
+  const reciboMatch = fullText.match(/N[úu]mero\s*do\s*Recibo\s*:?\s*([\d.\-]+)/i);
+  const numeroRecibo = reciboMatch ? reciboMatch[1].trim() : "";
+
+  // Número da Declaração
+  const declMatch = fullText.match(/N[ºo]\s*da\s*Declara[çc][aã]o\s*:?\s*(\d+)/i) ||
+    fullText.match(/N[úu]mero\s*da\s*Declara[çc][aã]o\s*:?\s*(\d+)/i);
+  const numeroDeclaracao = declMatch ? declMatch[1].trim() : "";
+
+  // Data de transmissão
+  const transmMatch = fullText.match(/transmiss[aã]o\s*da\s*Declara[çc][aã]o\s*:?\s*(\d{2}\/\d{2}\/\d{4}(?:\s+\d{2}:\d{2}:\d{2})?)/i);
+  const dataTransmissao = transmMatch ? transmMatch[1].trim() : "";
+
+  // Receita Bruta do PA (RPA)
+  const rpaMatch = fullText.match(/Receita\s*Bruta\s*do\s*PA[^\d]*([\d.,]+)/i);
+  const receitaPa = rpaMatch ? parseBRValue(rpaMatch[1]) : 0;
+
+  // RBT12
+  const rbt12Match = fullText.match(/\(RBT12\)[^\d]*([\d.,]+)/i);
+  const rbt12 = rbt12Match ? parseBRValue(rbt12Match[1]) : 0;
+
+  // RBA
+  const rbaMatch = fullText.match(/\(RBA\)[^\d]*([\d.,]+)/i);
+  const rba = rbaMatch ? parseBRValue(rbaMatch[1]) : 0;
+
+  // Receitas Brutas Anteriores - 2.2.1 Mercado Interno
   const receitasSection = fullText.match(
-    /2\.2\.1\)\s*Mercado\s*Interno([\s\S]*?)(?:2\.2\.2\)|2\.3\))/i
+    /2\.2\.1\)?\s*Mercado\s*Interno([\s\S]*?)(?:2\.2\.2\)|2\.3\))/i
   );
-  
-  // Find "Folha de Salários Anteriores" section (2.3)
+
+  // Folha de Salários Anteriores - 2.3
   const folhaSection = fullText.match(
-    /2\.3\)\s*Folha\s*de\s*Sal[aá]rios\s*Anteriores([\s\S]*?)(?:2\.3\.1\)|2\.4\))/i
+    /2\.3\)?\s*Folha\s*de\s*Sal[aá]rios\s*Anteriores([\s\S]*?)(?:2\.3\.1\)|2\.4\))/i
   );
 
   const receitasMensais = receitasSection
@@ -94,10 +131,23 @@ export const parsePgdasPdf = async (file: File): Promise<PgdasData> => {
     ? extractMonthValues(folhaSection[1])
     : {};
 
+  // Adiciona a receita do PA atual ao mapa mensal
+  if (periodoApuracao && receitaPa > 0) {
+    const [mm, yyyy] = periodoApuracao.split("/");
+    receitasMensais[`${yyyy}-${mm}-01`] = receitaPa;
+  }
+
   return {
     cnpj,
     cnpjFull,
+    razaoSocial,
     periodoApuracao,
+    numeroRecibo,
+    numeroDeclaracao,
+    dataTransmissao,
+    receitaPa,
+    rbt12,
+    rba,
     receitasMensais,
     folhaMensais,
   };

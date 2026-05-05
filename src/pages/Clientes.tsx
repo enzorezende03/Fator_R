@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Plus, Upload, Search, Pencil, FileText } from "lucide-react";
+import { Plus, Upload, Search, Pencil, FileText, FileStack } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import { parsePgdasPdf, PgdasData } from "@/lib/parsePgdasPdf";
@@ -192,6 +192,113 @@ const Clientes = () => {
     e.target.value = "";
   };
 
+  const [batchImporting, setBatchImporting] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 });
+
+  const handleBatchPgdas = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setBatchImporting(true);
+    setBatchProgress({ done: 0, total: files.length });
+
+    let createdClients = 0;
+    let updatedClients = 0;
+    let totalMonthsImported = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const data = await parsePgdasPdf(file);
+        if (!data.cnpj || data.cnpj.length < 14) {
+          errors.push(`${file.name}: CNPJ não identificado`);
+          continue;
+        }
+
+        const cnpjDigits = data.cnpj;
+
+        // Procura cliente existente
+        const { data: existing } = await supabase
+          .from("clients")
+          .select("id, razao_social")
+          .eq("cnpj", cnpjDigits)
+          .maybeSingle();
+
+        let clientId: string;
+        if (existing) {
+          clientId = existing.id;
+          updatedClients++;
+          // Atualiza razão social caso esteja diferente
+          if (data.razaoSocial && data.razaoSocial !== existing.razao_social) {
+            await supabase
+              .from("clients")
+              .update({ razao_social: data.razaoSocial })
+              .eq("id", clientId);
+          }
+        } else {
+          const { data: created, error: createErr } = await supabase
+            .from("clients")
+            .insert({
+              cnpj: cnpjDigits,
+              razao_social: data.razaoSocial || `Cliente ${cnpjDigits}`,
+              created_by: user?.id,
+            })
+            .select("id")
+            .single();
+          if (createErr || !created) {
+            errors.push(`${file.name}: erro ao criar cliente`);
+            continue;
+          }
+          clientId = created.id;
+          createdClients++;
+        }
+
+        // Importa dados mensais (faturamento e folha)
+        const months = new Set([
+          ...Object.keys(data.receitasMensais),
+          ...Object.keys(data.folhaMensais),
+        ]);
+        const upserts = Array.from(months).map((mesRef) => ({
+          client_id: clientId,
+          mes_referencia: mesRef,
+          folha_salarios: data.folhaMensais[mesRef] || 0,
+          faturamento: data.receitasMensais[mesRef] || 0,
+          created_by: user?.id,
+        }));
+        if (upserts.length > 0) {
+          for (const u of upserts) {
+            await supabase
+              .from("monthly_data")
+              .delete()
+              .eq("client_id", clientId)
+              .eq("mes_referencia", u.mes_referencia);
+          }
+          await supabase.from("monthly_data").insert(upserts);
+          totalMonthsImported += upserts.length;
+        }
+      } catch (err: any) {
+        console.error("Erro batch:", file.name, err);
+        errors.push(`${file.name}: ${err.message || "erro desconhecido"}`);
+      }
+      setBatchProgress({ done: i + 1, total: files.length });
+    }
+
+    setBatchImporting(false);
+    queryClient.invalidateQueries({ queryKey: ["clients"] });
+    queryClient.invalidateQueries({ queryKey: ["monthly_data"] });
+    queryClient.invalidateQueries({ queryKey: ["monthly_data_abatimento"] });
+
+    const msg = `${files.length} declarações processadas. ${createdClients} cliente(s) criado(s), ${updatedClients} atualizado(s), ${totalMonthsImported} meses importados.`;
+    if (errors.length > 0) {
+      toast.warning(msg + ` ${errors.length} erro(s).`);
+      console.warn("Erros na importação em lote:", errors);
+    } else {
+      toast.success(msg);
+    }
+    e.target.value = "";
+  };
+
   const filtered = clients.filter(
     (c) =>
       c.razao_social.toLowerCase().includes(search.toLowerCase()) ||
@@ -205,7 +312,21 @@ const Clientes = () => {
           <h1 className="font-display text-3xl font-bold text-foreground mb-1">Clientes</h1>
           <p className="text-sm text-muted-foreground">{clients.length} clientes cadastrados</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          <label className={`flex items-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors ${batchImporting ? "opacity-60 pointer-events-none" : ""}`}>
+            <FileStack className="w-4 h-4" />
+            {batchImporting
+              ? `Importando ${batchProgress.done}/${batchProgress.total}...`
+              : "Importar Declarações em Lote"}
+            <input
+              type="file"
+              accept=".pdf"
+              multiple
+              onChange={handleBatchPgdas}
+              disabled={batchImporting}
+              className="hidden"
+            />
+          </label>
           <label className="flex items-center gap-2 border border-primary text-primary px-4 py-2.5 rounded-lg text-sm font-medium cursor-pointer hover:bg-primary/5 transition-colors">
             <Upload className="w-4 h-4" />
             Importar Excel
