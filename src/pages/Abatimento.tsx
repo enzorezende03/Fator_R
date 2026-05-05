@@ -110,6 +110,8 @@ const Abatimento = () => {
     });
     setFolhaValues(folha);
     setRbaValues(rba);
+    const competenciaKey = toISODate(months[11]);
+    setFaturamentoMesRba(rba[competenciaKey] || "");
   }, [monthlyRows, months, selectedClientId]);
 
   const saveMutation = useMutation({
@@ -434,7 +436,10 @@ const Abatimento = () => {
                   onChange={(e) => setFaturamentoMesRba(e.target.value)}
                   onBlur={(e) => {
                     const num = parseBRL(e.target.value);
-                    setFaturamentoMesRba(num > 0 ? formatBRL(num) : "");
+                    const formatted = num > 0 ? formatBRL(num) : "";
+                    setFaturamentoMesRba(formatted);
+                    const competenciaKey = toISODate(months[11]);
+                    setRbaValues((prev) => ({ ...prev, [competenciaKey]: formatted }));
                   }}
                   placeholder="R$ 0,00"
                   className="w-40 px-3 py-1.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm text-right"
