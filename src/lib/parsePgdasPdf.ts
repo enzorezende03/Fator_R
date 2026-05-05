@@ -101,9 +101,21 @@ export const parsePgdasPdf = async (file: File): Promise<PgdasData> => {
   const transmMatch = fullText.match(/transmiss[aã]o\s*da\s*Declara[çc][aã]o\s*:?\s*(\d{2}\/\d{2}\/\d{4}(?:\s+\d{2}:\d{2}:\d{2})?)/i);
   const dataTransmissao = transmMatch ? transmMatch[1].trim() : "";
 
-  // Receita Bruta do PA (RPA)
-  const rpaMatch = fullText.match(/Receita\s*Bruta\s*do\s*PA[^\d]*([\d.,]+)/i);
-  const receitaPa = rpaMatch ? parseBRValue(rpaMatch[1]) : 0;
+  // Receita Bruta do PA (RPA) — tenta múltiplos padrões
+  let receitaPa = 0;
+  const rpaPatterns = [
+    /\(RPA\)[^\d\-]*([\d.,]+)/i,
+    /Receita\s*Bruta\s*do\s*PA\s*\(RPA\)[^\d\-]*([\d.,]+)/i,
+    /Receita\s*Bruta\s*do\s*PA[^\d\-]*([\d.,]+)/i,
+    /RPA\s*[:\-]?\s*R?\$?\s*([\d.,]+)/i,
+  ];
+  for (const pat of rpaPatterns) {
+    const m = fullText.match(pat);
+    if (m) {
+      const v = parseBRValue(m[1]);
+      if (v > 0) { receitaPa = v; break; }
+    }
+  }
 
   // RBT12
   const rbt12Match = fullText.match(/\(RBT12\)[^\d]*([\d.,]+)/i);
