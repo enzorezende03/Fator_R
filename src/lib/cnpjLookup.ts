@@ -16,7 +16,7 @@ export const shouldReplaceCompanyName = (currentName?: string | null, candidateN
   if (!candidate || candidate.length < 3) return false;
   if (!current) return true;
   if (candidate === current) return false;
-  return isIncompleteCompanyName(current) || candidate.length > current.length;
+  return candidate.length > current.length;
 };
 
 export const lookupCompanyNameByCnpj = async (cnpj: string) => {
@@ -53,5 +53,9 @@ export const resolveBestCompanyName = async (cnpj: string, parsedName?: string |
     return official;
   }
 
-  return parsed || current;
+  if (shouldReplaceCompanyName(current, parsed)) {
+    return parsed;
+  }
+
+  return current || parsed;
 };
