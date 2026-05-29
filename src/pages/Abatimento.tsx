@@ -378,6 +378,15 @@ const Abatimento = () => {
                     toast.error("Nenhum dado encontrado no PDF.");
                     return;
                   }
+                  const currentClient = clients.find((c) => c.id === selectedClientId);
+                  const cnpjClean = (data.cnpj || "").replace(/\D/g, "");
+                  if (currentClient && cnpjClean && currentClient.cnpj.replace(/\D/g, "") === cnpjClean) {
+                    const bestName = await resolveBestCompanyName(cnpjClean, data.razaoSocial, currentClient.razao_social);
+                    if (shouldReplaceCompanyName(currentClient.razao_social, bestName)) {
+                      await supabase.from("clients").update({ razao_social: bestName }).eq("id", currentClient.id);
+                      queryClient.invalidateQueries({ queryKey: ["clients"] });
+                    }
+                  }
                   const newFolha = { ...folhaValues };
                   const newRba = { ...rbaValues };
                   let filled = 0;
