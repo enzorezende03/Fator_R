@@ -63,18 +63,17 @@ export const resolveBestCompanyName = async (cnpj: string, parsedName?: string |
   const parsed = normalizeCompanyName(parsedName);
   const current = normalizeCompanyName(currentName);
 
-  if (parsed && !isIncompleteCompanyName(parsed) && parsed.length >= current.length) {
-    return parsed;
-  }
-
+  // Sempre consulta a Receita para garantir o nome COMPLETO (inclusive nomes de pessoa em MEI).
   const official = await lookupCompanyNameByCnpj(cnpj);
-  if (official && shouldReplaceCompanyName(current || parsed, official)) {
-    return official;
-  }
 
-  if (shouldReplaceCompanyName(current, parsed)) {
-    return parsed;
-  }
+  // Escolhe o nome mais completo entre os disponíveis (maior número de palavras, depois maior comprimento).
+  const candidates = [official, parsed, current].filter((n): n is string => !!n && n.length >= 3);
+  if (candidates.length === 0) return current || parsed;
 
-  return current || parsed;
+  const score = (name: string) => {
+    const words = name.split(" ").filter(Boolean).length;
+    return words * 1000 + name.length;
+  };
+
+  return candidates.reduce((best, curr) => (score(curr) > score(best) ? curr : best));
 };
