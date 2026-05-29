@@ -127,7 +127,7 @@ export const parseCartaFaturamento = async (file: File): Promise<CartaFaturament
     const pageItems = textItems
       .filter((item) => item.str && item.str.trim() && item.transform)
       .map((item) => ({
-        str: item.str.trim(),
+        str: item.str!.trim(),
         x: item.transform![4],
         y: Math.round(item.transform![5]), // round Y to group items on same line
       }));
