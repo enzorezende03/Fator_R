@@ -424,7 +424,7 @@ const Clientes = () => {
             <FileStack className="w-4 h-4" />
             {batchImporting
               ? `Importando ${batchProgress.done}/${batchProgress.total}...`
-              : "Importar Declarações em Lote"}
+              : "Importar Extratos/Declarações em Lote"}
             <input
               type="file"
               accept=".pdf"
