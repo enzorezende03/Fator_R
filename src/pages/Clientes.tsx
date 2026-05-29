@@ -16,6 +16,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import { parsePgdasPdf, PgdasData } from "@/lib/parsePgdasPdf";
+import { parseCartaFaturamento } from "@/lib/parseCartaFaturamento";
 import { resolveBestCompanyName, shouldReplaceCompanyName } from "@/lib/cnpjLookup";
 
 const formatCNPJ = (value: string) => {
@@ -284,13 +285,49 @@ const Clientes = () => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
-        const data = await parsePgdasPdf(file);
-        if (!data.cnpj || data.cnpj.length < 14) {
+        // Tenta primeiro como PGDAS-D; se inválido, tenta Carta de Faturamento (Extrato)
+        let cnpjDigits = "";
+        let razaoFromPdf: string | null = null;
+        let monthly: Record<string, { faturamento: number; folha: number }> = {};
+
+        try {
+          const pgdas = await parsePgdasPdf(file);
+          if (pgdas.cnpj && pgdas.cnpj.length >= 14) {
+            cnpjDigits = pgdas.cnpj;
+            razaoFromPdf = pgdas.razaoSocial || null;
+            const months = new Set([
+              ...Object.keys(pgdas.receitasMensais),
+              ...Object.keys(pgdas.folhaMensais),
+            ]);
+            months.forEach((mes) => {
+              monthly[mes] = {
+                faturamento: pgdas.receitasMensais[mes] || 0,
+                folha: pgdas.folhaMensais[mes] || 0,
+              };
+            });
+          }
+        } catch {
+          // ignora, tenta como Carta abaixo
+        }
+
+        if (!cnpjDigits) {
+          const carta = await parseCartaFaturamento(file);
+          if (carta.cnpj && carta.cnpj.length >= 14) {
+            cnpjDigits = carta.cnpj;
+            razaoFromPdf = carta.razaoSocial || null;
+            carta.rows.forEach((r) => {
+              monthly[r.mesReferencia] = {
+                faturamento: r.faturamento || 0,
+                folha: r.folhaSalarios || 0,
+              };
+            });
+          }
+        }
+
+        if (!cnpjDigits || cnpjDigits.length < 14) {
           errors.push(`${file.name}: CNPJ não identificado`);
           continue;
         }
-
-        const cnpjDigits = data.cnpj;
 
         // Procura cliente existente
         const { data: existing } = await supabase
@@ -300,11 +337,10 @@ const Clientes = () => {
           .maybeSingle();
 
         let clientId: string;
-        const razaoUpper = await resolveBestCompanyName(cnpjDigits, data.razaoSocial, existing?.razao_social);
+        const razaoUpper = await resolveBestCompanyName(cnpjDigits, razaoFromPdf, existing?.razao_social);
         if (existing) {
           clientId = existing.id;
           updatedClients++;
-          // Atualiza razão social caso esteja diferente (sempre em CAIXA ALTA conforme recibo)
           if (shouldReplaceCompanyName(existing.razao_social, razaoUpper)) {
             await supabase
               .from("clients")
@@ -330,15 +366,11 @@ const Clientes = () => {
         }
 
         // Importa dados mensais (faturamento e folha)
-        const months = new Set([
-          ...Object.keys(data.receitasMensais),
-          ...Object.keys(data.folhaMensais),
-        ]);
-        const upserts = Array.from(months).map((mesRef) => ({
+        const upserts = Object.entries(monthly).map(([mesRef, vals]) => ({
           client_id: clientId,
           mes_referencia: mesRef,
-          folha_salarios: data.folhaMensais[mesRef] || 0,
-          faturamento: data.receitasMensais[mesRef] || 0,
+          folha_salarios: vals.folha,
+          faturamento: vals.faturamento,
           created_by: user?.id,
         }));
         if (upserts.length > 0) {
@@ -364,7 +396,7 @@ const Clientes = () => {
     queryClient.invalidateQueries({ queryKey: ["monthly_data"] });
     queryClient.invalidateQueries({ queryKey: ["monthly_data_abatimento"] });
 
-    const msg = `${files.length} declarações processadas. ${createdClients} cliente(s) criado(s), ${updatedClients} atualizado(s), ${totalMonthsImported} meses importados.`;
+    const msg = `${files.length} arquivo(s) processado(s). ${createdClients} cliente(s) criado(s), ${updatedClients} atualizado(s), ${totalMonthsImported} meses importados.`;
     if (errors.length > 0) {
       toast.warning(msg + ` ${errors.length} erro(s).`);
       console.warn("Erros na importação em lote:", errors);
@@ -392,7 +424,7 @@ const Clientes = () => {
             <FileStack className="w-4 h-4" />
             {batchImporting
               ? `Importando ${batchProgress.done}/${batchProgress.total}...`
-              : "Importar Declarações em Lote"}
+              : "Importar Extratos/Declarações em Lote"}
             <input
               type="file"
               accept=".pdf"
