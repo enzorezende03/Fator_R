@@ -32,6 +32,11 @@ interface TextItem {
   y: number;
 }
 
+type PdfTextContentItem = {
+  str?: string;
+  transform?: number[];
+};
+
 const companyNameLabels = [
   "Raz[ãa]o\\s*Social",
   "Nome\\s*Empresarial",
@@ -118,19 +123,20 @@ export const parseCartaFaturamento = async (file: File): Promise<CartaFaturament
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const pageItems = content.items
-      .filter((item: any) => item.str && item.str.trim())
-      .map((item: any) => ({
+    const textItems = content.items as PdfTextContentItem[];
+    const pageItems = textItems
+      .filter((item) => item.str && item.str.trim() && item.transform)
+      .map((item) => ({
         str: item.str.trim(),
-        x: item.transform[4],
-        y: Math.round(item.transform[5]), // round Y to group items on same line
+        x: item.transform![4],
+        y: Math.round(item.transform![5]), // round Y to group items on same line
       }));
     allItems.push(...pageItems);
-    fullText += content.items.map((item: any) => item.str).join(" ") + "\n";
+    fullText += textItems.map((item) => item.str || "").join(" ") + "\n";
   }
 
   // Extract CNPJ
-  const cnpjMatch = fullText.match(/CNPJ\s*:\s*([\d.\/\-]+)/i);
+  const cnpjMatch = fullText.match(new RegExp("CNPJ\\s*:?\\s*([\\d./-]+)", "i"));
   const cnpj = cnpjMatch ? cnpjMatch[1].replace(/\D/g, "") : "";
 
   // Group items by Y position (same row) with tolerance
