@@ -32,6 +32,81 @@ interface TextItem {
   y: number;
 }
 
+const companyNameLabels = [
+  "Raz[ãa]o\\s*Social",
+  "Nome\\s*Empresarial",
+  "Nome\\s+da\\s+Empresa",
+  "Contribuinte",
+  "Empresa",
+  "Cliente",
+];
+
+const companyNameStopLabels = [
+  "CNPJ",
+  "CPF\\s*/\\s*CNPJ",
+  "Inscri[çc][ãa]o",
+  "Compet[eê]ncia",
+  "Per[ií]odo",
+  "Endere[çc]o",
+  "Telefone",
+  "E-?mail",
+  "Faturamento",
+  "Folha",
+  "M[eê]s",
+  "Valor",
+  "Total",
+];
+
+const cleanCompanyName = (value: string) => {
+  const labelPattern = companyNameLabels.join("|");
+  const stopPattern = companyNameStopLabels.join("|");
+  const cleaned = value
+    .replace(new RegExp(`^(?:${labelPattern})\\s*:?\\s*`, "i"), "")
+    .replace(new RegExp(`\\s+(?:${stopPattern})\\s*:?[\\s\\S]*$`, "i"), "")
+    .replace(/^[\s:;\-–—|]+|[\s:;\-–—|]+$/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .toUpperCase();
+
+  if (cleaned.length < 3) return "";
+  if (/^(CARTA|FATURAMENTO|CNPJ|TOTAL|COMPET[EÊ]NCIA|M[EÊ]S)\b/.test(cleaned)) return "";
+  if (!/[A-ZÀ-Ú]/.test(cleaned) || /^\d+$/.test(cleaned.replace(/\D/g, ""))) return "";
+  return cleaned;
+};
+
+const extractCompanyName = (fullText: string, sortedRows: TextItem[][]) => {
+  const labelPattern = companyNameLabels.join("|");
+  const stopPattern = companyNameStopLabels.join("|");
+  const normalizedText = fullText.replace(/\s+/g, " ");
+  const labeledMatch = normalizedText.match(
+    new RegExp(`(?:${labelPattern})\\s*:?\\s*(.+?)(?=\\s+(?:${stopPattern})\\s*:?|$)`, "i")
+  );
+  const fromFullText = labeledMatch?.[1] ? cleanCompanyName(labeledMatch[1]) : "";
+  if (fromFullText) return fromFullText;
+
+  const rowTexts = sortedRows.map((items) => items.map((item) => item.str).join(" ").replace(/\s+/g, " ").trim());
+  const labelRegex = new RegExp(`(?:${labelPattern})`, "i");
+
+  for (let i = 0; i < rowTexts.length; i++) {
+    const rowText = rowTexts[i];
+    if (!labelRegex.test(rowText)) continue;
+
+    const sameLine = cleanCompanyName(rowText.replace(new RegExp(`^.*?(?:${labelPattern})\\s*:?\\s*`, "i"), ""));
+    if (sameLine) return sameLine;
+
+    const nextLine = cleanCompanyName(rowTexts[i + 1] || "");
+    if (nextLine) return nextLine;
+  }
+
+  const cnpjLine = rowTexts.find((rowText) => /CNPJ/i.test(rowText));
+  if (cnpjLine) {
+    const beforeCnpj = cleanCompanyName(cnpjLine.split(/CNPJ/i)[0] || "");
+    if (beforeCnpj) return beforeCnpj;
+  }
+
+  return "";
+};
+
 export const parseCartaFaturamento = async (file: File): Promise<CartaFaturamentoData> => {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
