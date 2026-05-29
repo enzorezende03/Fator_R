@@ -159,5 +159,5 @@ export const parseCartaFaturamento = async (file: File): Promise<CartaFaturament
     }
   }
 
-  return { cnpj, rows };
+  return { cnpj, razaoSocial, rows };
 };
