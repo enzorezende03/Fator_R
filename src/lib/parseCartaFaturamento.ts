@@ -22,6 +22,7 @@ export interface CartaFaturamentoRow {
 
 export interface CartaFaturamentoData {
   cnpj: string;
+  razaoSocial: string;
   rows: CartaFaturamentoRow[];
 }
 
