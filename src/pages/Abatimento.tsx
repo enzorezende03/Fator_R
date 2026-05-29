@@ -281,12 +281,14 @@ const Abatimento = () => {
                     continue;
                   }
 
+                  const razaoFromPdf = (data.razaoSocial || "").trim().toUpperCase();
                   let client = clientMap.get(cnpjClean);
                   let created = false;
                   if (!client) {
+                    const nomeNovo = razaoFromPdf || `EMPRESA ${cnpjClean}`;
                     const { data: newClient, error: insErr } = await supabase
                       .from("clients")
-                      .insert({ cnpj: cnpjClean, razao_social: `EMPRESA ${cnpjClean}`, created_by: user.id })
+                      .insert({ cnpj: cnpjClean, razao_social: nomeNovo, created_by: user.id })
                       .select("id, cnpj, razao_social")
                       .single();
                     if (insErr || !newClient) {
@@ -296,6 +298,18 @@ const Abatimento = () => {
                     client = newClient;
                     clientMap.set(cnpjClean, newClient);
                     created = true;
+                  } else if (razaoFromPdf && razaoFromPdf.length > (client.razao_social || "").length) {
+                    // Atualiza nome se o PDF traz razão social mais completa
+                    const { data: upd } = await supabase
+                      .from("clients")
+                      .update({ razao_social: razaoFromPdf })
+                      .eq("id", client.id)
+                      .select("id, cnpj, razao_social")
+                      .single();
+                    if (upd) {
+                      client = upd;
+                      clientMap.set(cnpjClean, upd);
+                    }
                   }
 
                   // Upsert monthly_data
