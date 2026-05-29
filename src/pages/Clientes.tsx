@@ -396,7 +396,7 @@ const Clientes = () => {
     queryClient.invalidateQueries({ queryKey: ["monthly_data"] });
     queryClient.invalidateQueries({ queryKey: ["monthly_data_abatimento"] });
 
-    const msg = `${files.length} declarações processadas. ${createdClients} cliente(s) criado(s), ${updatedClients} atualizado(s), ${totalMonthsImported} meses importados.`;
+    const msg = `${files.length} arquivo(s) processado(s). ${createdClients} cliente(s) criado(s), ${updatedClients} atualizado(s), ${totalMonthsImported} meses importados.`;
     if (errors.length > 0) {
       toast.warning(msg + ` ${errors.length} erro(s).`);
       console.warn("Erros na importação em lote:", errors);
