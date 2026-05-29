@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Save, ChevronLeft, ChevronRight, ChevronsUpDown, Check, Upload, FileText } from "lucide-react";
 import { generateReportPdf, type ReportData } from "@/lib/generateReportPdf";
 import { parseCartaFaturamento } from "@/lib/parseCartaFaturamento";
+import { resolveBestCompanyName, shouldReplaceCompanyName } from "@/lib/cnpjLookup";
 import { calcularAliquotaEfetiva } from "@/lib/aliquotaEfetiva";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -281,8 +282,8 @@ const Abatimento = () => {
                     continue;
                   }
 
-                  const razaoFromPdf = (data.razaoSocial || "").trim().toUpperCase();
                   let client = clientMap.get(cnpjClean);
+                  const razaoFromPdf = await resolveBestCompanyName(cnpjClean, data.razaoSocial, client?.razao_social);
                   let created = false;
                   if (!client) {
                     const nomeNovo = razaoFromPdf || `EMPRESA ${cnpjClean}`;
@@ -298,7 +299,7 @@ const Abatimento = () => {
                     client = newClient;
                     clientMap.set(cnpjClean, newClient);
                     created = true;
-                  } else if (razaoFromPdf && razaoFromPdf.length > (client.razao_social || "").length) {
+                  } else if (shouldReplaceCompanyName(client.razao_social, razaoFromPdf)) {
                     // Atualiza nome se o PDF traz razão social mais completa
                     const { data: upd } = await supabase
                       .from("clients")
