@@ -16,6 +16,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import { parsePgdasPdf, PgdasData } from "@/lib/parsePgdasPdf";
+import { resolveBestCompanyName, shouldReplaceCompanyName } from "@/lib/cnpjLookup";
 
 const formatCNPJ = (value: string) => {
   const nums = value.replace(/\D/g, "").slice(0, 14);
@@ -299,12 +300,12 @@ const Clientes = () => {
           .maybeSingle();
 
         let clientId: string;
-        const razaoUpper = (data.razaoSocial || "").trim().toUpperCase();
+        const razaoUpper = await resolveBestCompanyName(cnpjDigits, data.razaoSocial, existing?.razao_social);
         if (existing) {
           clientId = existing.id;
           updatedClients++;
           // Atualiza razão social caso esteja diferente (sempre em CAIXA ALTA conforme recibo)
-          if (razaoUpper && razaoUpper !== (existing.razao_social || "").toUpperCase()) {
+          if (shouldReplaceCompanyName(existing.razao_social, razaoUpper)) {
             await supabase
               .from("clients")
               .update({ razao_social: razaoUpper })
