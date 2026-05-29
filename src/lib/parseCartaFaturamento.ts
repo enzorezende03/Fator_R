@@ -58,6 +58,22 @@ export const parseCartaFaturamento = async (file: File): Promise<CartaFaturament
   const cnpjMatch = fullText.match(/CNPJ\s*:\s*([\d.\/\-]+)/i);
   const cnpj = cnpjMatch ? cnpjMatch[1].replace(/\D/g, "") : "";
 
+  // Extract Razão Social — try labeled patterns first, then fall back to text near CNPJ
+  let razaoSocial = "";
+  const labeledPatterns = [
+    /Raz[ãa]o\s*Social\s*:?\s*([^\n\r]+?)(?=\s{2,}|CNPJ|Inscri[çc][ãa]o|$)/i,
+    /Nome\s*Empresarial\s*:?\s*([^\n\r]+?)(?=\s{2,}|CNPJ|$)/i,
+    /Contribuinte\s*:?\s*([^\n\r]+?)(?=\s{2,}|CNPJ|$)/i,
+  ];
+  for (const re of labeledPatterns) {
+    const m = fullText.match(re);
+    if (m && m[1]) {
+      razaoSocial = m[1].trim().replace(/\s{2,}/g, " ");
+      break;
+    }
+  }
+  razaoSocial = razaoSocial.toUpperCase();
+
   // Group items by Y position (same row) with tolerance
   const rowMap = new Map<number, TextItem[]>();
   allItems.forEach((item) => {
