@@ -16,6 +16,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
 import { parsePgdasPdf, PgdasData } from "@/lib/parsePgdasPdf";
+import { parseCartaFaturamento } from "@/lib/parseCartaFaturamento";
 import { resolveBestCompanyName, shouldReplaceCompanyName } from "@/lib/cnpjLookup";
 
 const formatCNPJ = (value: string) => {
