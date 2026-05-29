@@ -222,6 +222,10 @@ const Clientes = () => {
       }
 
       setPgdasData(data);
+      const bestName = await resolveBestCompanyName(data.cnpj || formCnpj, data.razaoSocial, form.razao_social);
+      if (shouldReplaceCompanyName(form.razao_social, bestName)) {
+        setForm((current) => ({ ...current, razao_social: bestName }));
+      }
       const totalMonths = new Set([
         ...Object.keys(data.receitasMensais),
         ...Object.keys(data.folhaMensais),
@@ -244,13 +248,20 @@ const Clientes = () => {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[] = XLSX.utils.sheet_to_json(sheet);
 
-    const mapped = rows
+    const rawRows = rows
       .map((row) => ({
         razao_social: String(row["Razão Social"] || row["razao_social"] || row["RAZAO_SOCIAL"] || row["Empresa"] || "").trim().toUpperCase(),
         cnpj: String(row["CNPJ"] || row["cnpj"] || "").replace(/\D/g, ""),
         created_by: user?.id,
       }))
       .filter((r) => r.razao_social && r.cnpj.length >= 14);
+
+    const mapped = await Promise.all(
+      rawRows.map(async (row) => ({
+        ...row,
+        razao_social: (await resolveBestCompanyName(row.cnpj, row.razao_social)) || row.razao_social,
+      }))
+    );
 
     if (mapped.length === 0) {
       toast.error("Nenhum cliente válido encontrado na planilha");
