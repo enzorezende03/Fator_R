@@ -28,32 +28,28 @@ function drawDonut(percentage: number): string {
   const start = -Math.PI / 2;
   const angle = (percentage / 100) * Math.PI * 2;
 
-  // Background ring
+  // Background ring (evenodd to create hole)
   ctx.beginPath();
   ctx.arc(cx, cy, oR, 0, Math.PI * 2);
-  ctx.arc(cx, cy, iR, Math.PI * 2, 0, true);
-  ctx.closePath();
-  ctx.fillStyle = "#bfc5cb";
-  ctx.fill();
+  ctx.moveTo(cx + iR, cy);
+  ctx.arc(cx, cy, iR, 0, Math.PI * 2);
+  ctx.fillStyle = "#d6dade";
+  ctx.fill("evenodd");
 
-  // Main arc (steel blue)
-  ctx.beginPath();
-  ctx.arc(cx, cy, oR, start, start + angle);
-  ctx.arc(cx, cy, iR, start + angle, start, true);
-  ctx.closePath();
-  ctx.fillStyle = "#5ba0b5";
-  ctx.fill();
-
-  // Green sliver at junction
-  ctx.beginPath();
-  ctx.arc(cx, cy, oR, start + angle - 0.04, start + angle + 0.06);
-  ctx.arc(cx, cy, iR, start + angle + 0.06, start + angle - 0.04, true);
-  ctx.closePath();
-  ctx.fillStyle = "#8cc152";
-  ctx.fill();
+  // Main arc wedge
+  if (angle > 0) {
+    ctx.beginPath();
+    ctx.moveTo(cx + oR * Math.cos(start), cy + oR * Math.sin(start));
+    ctx.arc(cx, cy, oR, start, start + angle);
+    ctx.lineTo(cx + iR * Math.cos(start + angle), cy + iR * Math.sin(start + angle));
+    ctx.arc(cx, cy, iR, start + angle, start, true);
+    ctx.closePath();
+    ctx.fillStyle = "#3A826E";
+    ctx.fill();
+  }
 
   // Percentage text in center
-  ctx.fillStyle = "#5ba0b5";
+  ctx.fillStyle = "#3A826E";
   ctx.font = `bold ${s * 0.22}px Arial`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -355,18 +351,12 @@ function generatePage(doc: jsPDF, data: ReportData, logoBase64: string | null) {
   const econStr = economia > 0 ? `R$ ${fmtCur(economia)}` : "R$ 0,00";
   doc.text(econStr, boxX + 28, y + 34);
 
-  // Donut chart (positioned further right to avoid overlap)
-  if (econPct > 0) {
-    try {
-      const donutImg = drawDonut(Math.min(Math.abs(econPct), 100));
-      doc.addImage(donutImg, "PNG", boxX + boxW - 36, y + 16, 28, 28);
-    } catch (_) { /* skip */ }
-  } else {
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(120);
-    doc.text("0%", boxX + boxW - 22, y + 32, { align: "center" });
-  }
+  // Donut chart (always render, clamp 0-100)
+  try {
+    const pct = Math.max(0, Math.min(Math.abs(econPct || 0), 100));
+    const donutImg = drawDonut(pct);
+    doc.addImage(donutImg, "PNG", boxX + boxW - 38, y + 14, 32, 32);
+  } catch (_) { /* skip */ }
 }
 
 export async function generateReportPdf(data: ReportData): Promise<jsPDF> {
