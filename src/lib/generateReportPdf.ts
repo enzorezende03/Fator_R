@@ -49,7 +49,7 @@ function drawDonut(percentage: number): string {
   }
 
   // Percentage text in center
-  ctx.fillStyle = "#5ba0b5";
+  ctx.fillStyle = "#3A826E";
   ctx.font = `bold ${s * 0.22}px Arial`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
