@@ -1,0 +1,1 @@
+Password recovery uses a public /reset-password route and Cloud Auth recovery links; only recovery sessions enable password updates, so ordinary sessions cannot use this form.
