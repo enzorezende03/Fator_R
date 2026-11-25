@@ -13,3 +13,7 @@
 - [x] Adicionar desativação, reativação e exclusão confirmadas para administradores.
 - [x] Bloquear acessos de contas desativadas e preservar dados vinculados ao excluir.
 - [x] Testar permissões e o fluxo autenticado na tela de Usuários; desativação, reativação, exclusão, bloqueio de histórico, operacional e celular verificados com contas descartáveis.
+
+# Organização de Configurações
+- [x] Agrupar Usuários e Clientes em Configurações, preservando rotas e permissões.
+- [x] Verificar navegação autenticada entre as três telas e apresentação no celular.

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings, UserPlus, Users, Loader2, CheckCircle2 } from "lucide-react";
+import { Settings, UserPlus, Users, Building2, Loader2, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -42,8 +42,11 @@ export default function Configuracoes() {
           <Settings className="w-8 h-8 text-primary shrink-0" />
           <h1 className="font-display text-3xl font-bold text-foreground">Configurações</h1>
         </div>
-        <Button variant="outline" asChild><Link to="/administradores"><Users />Usuários cadastrados</Link></Button>
       </div>
+      <nav aria-label="Áreas de Configurações" className="flex flex-wrap gap-3 mb-8 border-b border-border pb-6">
+        <Button variant="outline" asChild><Link to="/administradores"><Users />Usuários</Link></Button>
+        <Button variant="outline" asChild><Link to="/clientes"><Building2 />Clientes</Link></Button>
+      </nav>
       <section className="max-w-2xl">
         <h2 className="font-display text-xl font-bold text-foreground mb-6 flex items-center gap-2"><UserPlus className="w-5 h-5 text-primary" />Criar usuário</h2>
         {isLoading ? <p className="text-muted-foreground">Verificando acesso...</p> : isError ? (
