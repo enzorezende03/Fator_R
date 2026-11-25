@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { passwordErrorMessage } from "@/lib/passwordError";
 
 const Login = () => {
   const { signIn, signUp } = useAuth();
@@ -35,7 +36,7 @@ const Login = () => {
         navigate("/");
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao processar");
+      toast.error(passwordErrorMessage(error) || error.message || "Erro ao processar");
     } finally {
       setLoading(false);
     }

@@ -63,3 +63,9 @@ it("never places internal approval in editable signup metadata", async () => {
   expect(mocks.from).toHaveBeenCalledWith("user_roles");
   expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ internal_access_approved: true }));
 });
+
+it("rejects weak passwords without assigning account access", async () => {
+  mocks.signUp.mockResolvedValue({ data: { user: null, session: null }, error: { code: "weak_password", message: "Password is known to be weak and easy to guess, please choose a different one." } });
+  await expect(createInternalUser(values)).rejects.toThrow("senha é fraca");
+  expect(mocks.update).not.toHaveBeenCalled();
+});

@@ -17,3 +17,7 @@
 # Organização de Configurações
 - [x] Agrupar Usuários e Clientes em Configurações, preservando rotas e permissões.
 - [x] Verificar navegação autenticada entre as três telas e apresentação no celular.
+
+# Erro ao criar usuários
+- [x] Identificar recusa de senha fraca nos registros e explicar o motivo no cadastro, login/cadastro e recuperação.
+- [x] Verificar a mensagem com cadastro autenticado e testar sem desativar a proteção; senha recusada corretamente e sessão do administrador preservada.

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { passwordErrorMessage } from "./passwordError";
 
 export type InternalUserForm = {
   displayName: string;
@@ -32,6 +33,8 @@ export async function createInternalUser(values: InternalUserForm) {
     },
   });
   if (error) {
+    const passwordMessage = passwordErrorMessage(error);
+    if (passwordMessage) throw new Error(passwordMessage);
     if (error.code === "user_already_exists" || error.message === "User already registered") {
       throw new Error("Este e-mail já está cadastrado. Consulte a aba Usuários.");
     }

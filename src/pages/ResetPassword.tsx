@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { passwordErrorMessage } from "@/lib/passwordError";
 
 export default function ResetPassword() {
   const recoveryLink = useRef(new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery");
@@ -40,8 +41,8 @@ export default function ResetPassword() {
       if (updateError) throw updateError;
       setSaved(true);
       await supabase.auth.signOut();
-    } catch {
-      setError("Não foi possível salvar a senha. Solicite um novo link e tente novamente.");
+    } catch (error) {
+      setError(passwordErrorMessage(error) || "Não foi possível salvar a senha. Solicite um novo link e tente novamente.");
     } finally { setPending(false); }
   };
 
