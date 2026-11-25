@@ -1,2 +1,3 @@
 Password recovery uses a public /reset-password route and Cloud Auth recovery links; only recovery sessions enable password updates, so ordinary sessions cannot use this form.
 User creation lives in /configuracoes and uses a non-persistent registration client so signup cannot replace the administrator's session; existing protected user_roles stores admin/user, with user displayed as Operacional in this form.
+Shared clients, monthly data, and staff profiles require administrator-controlled internal_access_approved in user_roles; signup defaults to unapproved, and administrator creation or promotion grants approval to prevent self-registration from exposing internal data.

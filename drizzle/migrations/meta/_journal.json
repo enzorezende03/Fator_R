@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1795633405142,
+      "tag": "0000_restrict_selected_tables_to_approved_internal_users",
+      "breakpoints": true
+    }
+  ]
+}

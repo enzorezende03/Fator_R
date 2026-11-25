@@ -92,7 +92,7 @@ const Administradores = () => {
     mutationFn: async (userId: string) => {
       const { error } = await supabase
         .from("user_roles")
-        .update({ role: "admin" as any })
+        .update({ role: "admin", internal_access_approved: true })
         .eq("user_id", userId);
       if (error) throw error;
     },

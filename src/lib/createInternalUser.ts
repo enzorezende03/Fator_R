@@ -41,7 +41,7 @@ export async function createInternalUser(values: InternalUserForm) {
     throw new Error("Não foi possível criar a conta. Verifique se o e-mail já está cadastrado.");
   }
   const { error: roleError } = await supabase.from("user_roles")
-    .update({ role: values.role }).eq("user_id", data.user.id).select("role").single();
+    .update({ role: values.role, internal_access_approved: true }).eq("user_id", data.user.id).select("role").single();
   if (roleError) {
     throw new Error("A conta foi cadastrada, mas o acesso não foi definido. Confira o usuário na aba Usuários antes de tentar novamente.");
   }

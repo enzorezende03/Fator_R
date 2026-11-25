@@ -40,7 +40,7 @@ it("preserves the administrator session with an isolated non-persistent client",
 
 it("stores operational access as the existing protected user role", async () => {
   const result = await createInternalUser(values);
-  expect(mocks.update).toHaveBeenCalledWith({ role: "user" });
+  expect(mocks.update).toHaveBeenCalledWith({ role: "user", internal_access_approved: true });
   expect(mocks.eq).toHaveBeenCalledWith("user_id", "new-user");
   expect(result.needsConfirmation).toBe(true);
 });
@@ -48,11 +48,18 @@ it("stores operational access as the existing protected user role", async () => 
 it("stores administrator access only in user_roles, not user metadata", async () => {
   await createInternalUser({ ...values, role: "admin" });
   expect(mocks.from).toHaveBeenCalledWith("user_roles");
-  expect(mocks.update).toHaveBeenCalledWith({ role: "admin" });
+  expect(mocks.update).toHaveBeenCalledWith({ role: "admin", internal_access_approved: true });
   expect(mocks.signUp.mock.calls[0][0].options.data).toEqual({ display_name: "Pessoa de Teste" });
 });
 
 it("does not claim success when role assignment fails", async () => {
   mocks.single.mockResolvedValue({ data: null, error: { message: "permission denied" } });
   await expect(createInternalUser(values)).rejects.toThrow("o acesso não foi definido");
+});
+
+it("never places internal approval in editable signup metadata", async () => {
+  await createInternalUser(values);
+  expect(mocks.signUp.mock.calls[0][0].options.data).not.toHaveProperty("internal_access_approved");
+  expect(mocks.from).toHaveBeenCalledWith("user_roles");
+  expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({ internal_access_approved: true }));
 });

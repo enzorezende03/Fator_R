@@ -121,16 +121,19 @@ export type Database = {
       user_roles: {
         Row: {
           id: string
+          internal_access_approved: boolean
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           id?: string
+          internal_access_approved?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           id?: string
+          internal_access_approved?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
@@ -141,6 +144,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_internal_access: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
