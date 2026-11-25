@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Clientes from "./pages/Clientes";
 import Calculadora from "./pages/Calculadora";
 import Administradores from "./pages/Administradores";
+import Configuracoes from "./pages/Configuracoes";
 import Abatimento from "./pages/Abatimento";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/abatimento" element={<Abatimento />} />
               <Route path="/calculadora" element={<Calculadora />} />
               <Route path="/administradores" element={<Administradores />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

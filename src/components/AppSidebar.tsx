@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calculator, Users, TrendingUp, LogOut, ShieldCheck, FileInput } from "lucide-react";
+import { LayoutDashboard, Calculator, Users, TrendingUp, LogOut, ShieldCheck, FileInput, Settings } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -22,6 +22,7 @@ const items = [
   { title: "Cálculo do Fator R", url: "/abatimento", icon: FileInput },
   { title: "Usuários", url: "/administradores", icon: ShieldCheck },
   { title: "Calculadora", url: "/calculadora", icon: Calculator },
+  { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -32,10 +33,11 @@ export function AppSidebar() {
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
+      if (!user) return null;
       const { data } = await supabase
         .from("profiles")
         .select("display_name")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .single();
       return data;
     },
@@ -84,7 +86,7 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && user && (
           <p className="text-xs text-sidebar-foreground/50 truncate mb-2 px-1">
-            {profile?.display_name || user.email}
+            {profile?.display_name || "Usuário"}
           </p>
         )}
         <button

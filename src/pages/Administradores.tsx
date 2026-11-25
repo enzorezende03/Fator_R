@@ -1,24 +1,24 @@
-import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShieldCheck, Plus, UserMinus, UserPlus, User, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 const Administradores = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ email: "", password: "", displayName: "" });
 
   const { data: currentProfile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .single();
       if (error) throw error;
       return data;
@@ -29,10 +29,11 @@ const Administradores = () => {
   const { data: currentRole } = useQuery({
     queryKey: ["my_role", user?.id],
     queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .single();
       if (error) throw error;
       return data;
@@ -87,35 +88,6 @@ const Administradores = () => {
     queryClient.invalidateQueries({ queryKey: ["all_users_profiles"] });
   };
 
-  const createAdminMutation = useMutation({
-    mutationFn: async (values: typeof form) => {
-      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: { display_name: values.displayName },
-          emailRedirectTo: window.location.origin,
-        },
-      });
-      if (signUpErr) throw signUpErr;
-      if (!signUpData.user) throw new Error("Erro ao criar usuário");
-      const { error: roleErr } = await supabase
-        .from("user_roles")
-        .update({ role: "admin" as any })
-        .eq("user_id", signUpData.user.id);
-      if (roleErr) throw roleErr;
-    },
-    onSuccess: () => {
-      toast.success("Administrador criado com sucesso!");
-      setForm({ email: "", password: "", displayName: "" });
-      setShowForm(false);
-      invalidateAll();
-    },
-    onError: (err: any) => {
-      toast.error(err.message || "Erro ao criar administrador");
-    },
-  });
-
   const promoteMutation = useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase
@@ -149,13 +121,15 @@ const Administradores = () => {
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex flex-wrap items-center gap-3 mb-8">
         <ShieldCheck className="w-8 h-8 text-primary" />
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">Usuários</h1>
           <p className="text-sm text-muted-foreground">Gerencie os administradores e usuários do sistema</p>
         </div>
       </div>
+
+      {currentRole?.role === "admin" && <Button asChild className="mb-6"><Link to="/configuracoes"><Plus />Criar usuário</Link></Button>}
 
       {/* Tabs */}
       <Tabs defaultValue="perfil" className="w-full">
@@ -265,78 +239,7 @@ const Administradores = () => {
             <h2 className="font-display text-xl font-bold text-foreground">
               Administradores ({admins.length})
             </h2>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              <Plus className="w-4 h-4" />
-              Novo Administrador
-            </button>
           </div>
-
-          {/* Create admin form */}
-          {showForm && (
-            <div className="bg-card rounded-xl border border-border p-6 mb-6 animate-in fade-in slide-in-from-top-2">
-              <h3 className="font-display text-lg font-bold text-foreground mb-4">Criar novo administrador</h3>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  createAdminMutation.mutate(form);
-                }}
-                className="grid grid-cols-3 gap-4"
-              >
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">Nome</label>
-                  <input
-                    required
-                    value={form.displayName}
-                    onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Nome completo"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">E-mail</label>
-                  <input
-                    required
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1">Senha</label>
-                  <input
-                    required
-                    type="password"
-                    minLength={6}
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Mínimo 6 caracteres"
-                  />
-                </div>
-                <div className="col-span-3 flex gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={createAdminMutation.isPending}
-                    className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    {createAdminMutation.isPending ? "Criando..." : "Criar Administrador"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-6 py-2.5 rounded-lg border border-border text-muted-foreground text-sm hover:bg-secondary transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
 
           {/* Admin list */}
           {isLoading ? (
