@@ -45,13 +45,14 @@ const Clientes = () => {
   const { data: isAdmin = false } = useQuery({
     queryKey: ["is_admin", user?.id],
     queryFn: async () => {
+      if (!user) return false;
       const { data } = await supabase
         .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id)
+        .select("role, account_disabled")
+        .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
-      return !!data;
+      return !!data && !data.account_disabled;
     },
     enabled: !!user?.id,
   });

@@ -120,18 +120,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          account_disabled: boolean
           id: string
           internal_access_approved: boolean
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          account_disabled?: boolean
           id?: string
           internal_access_approved?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          account_disabled?: boolean
           id?: string
           internal_access_approved?: boolean
           role?: Database["public"]["Enums"]["app_role"]

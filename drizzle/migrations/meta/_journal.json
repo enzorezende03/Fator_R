@@ -8,6 +8,13 @@
       "when": 1795633405142,
       "tag": "0000_restrict_selected_tables_to_approved_internal_users",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795633850731,
+      "tag": "0001_disabled_internal_accounts",
+      "breakpoints": true
     }
   ]
 }

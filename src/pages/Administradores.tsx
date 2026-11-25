@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldCheck, Plus, UserMinus, UserPlus, User, Users } from "lucide-react";
+import { ShieldCheck, Plus, UserMinus, UserPlus, User, Users, Ban, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 
 const Administradores = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [confirmation, setConfirmation] = useState<{ userId: string; name: string; action: "deactivate" | "reactivate" | "delete" } | null>(null);
 
   const { data: currentProfile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -32,7 +35,7 @@ const Administradores = () => {
       if (!user) return null;
       const { data, error } = await supabase
         .from("user_roles")
-        .select("role")
+        .select("role, account_disabled")
         .eq("user_id", user.id)
         .single();
       if (error) throw error;
@@ -81,6 +84,8 @@ const Administradores = () => {
     allRoles.some((r) => r.user_id === userId && r.role === "admin");
 
   const regularUsers = allUsers.filter((u) => !isAdmin(u.user_id));
+  const canManage = currentRole?.role === "admin" && !currentRole.account_disabled;
+  const disabled = (id: string) => allRoles.some((r) => r.user_id === id && r.account_disabled);
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["admins"] });
@@ -118,8 +123,38 @@ const Administradores = () => {
     onError: () => toast.error("Erro ao remover administrador"),
   });
 
+  const accountMutation = useMutation({
+    mutationFn: async (request: NonNullable<typeof confirmation>) => {
+      const { data, error } = await supabase.functions.invoke("manage-user", { body: { userId: request.userId, action: request.action } });
+      if (error) {
+        let message = "Não foi possível concluir a ação.";
+        if ("context" in error && error.context instanceof Response) {
+          const response = await error.context.json().catch(() => null);
+          if (response?.error) message = response.error;
+        }
+        throw new Error(message);
+      }
+      if (!data?.success) throw new Error(data?.error || "Não foi possível concluir a ação.");
+    },
+    onSuccess: (_, request) => {
+      toast.success(request.action === "delete" ? "Usuário excluído." : request.action === "deactivate" ? "Usuário desativado." : "Usuário reativado.");
+      setConfirmation(null);
+      invalidateAll();
+    },
+    onError: (error: Error) => { toast.error(error.message); invalidateAll(); },
+  });
+
+  const accountActions = (id: string, name: string) => canManage && id !== user?.id ? (
+    <div className="flex items-center gap-1">
+      <Button variant="ghost" size="icon" title={disabled(id) ? "Reativar usuário" : "Desativar usuário"} aria-label={disabled(id) ? `Reativar ${name}` : `Desativar ${name}`} disabled={accountMutation.isPending} onClick={() => setConfirmation({ userId: id, name, action: disabled(id) ? "reactivate" : "deactivate" })}>
+        {disabled(id) ? <RotateCcw className="w-4 h-4" /> : <Ban className="w-4 h-4" />}
+      </Button>
+      <Button variant="ghost" size="icon" className="text-destructive" title="Excluir usuário" aria-label={`Excluir ${name}`} disabled={accountMutation.isPending} onClick={() => setConfirmation({ userId: id, name, action: "delete" })}><Trash2 className="w-4 h-4" /></Button>
+    </div>
+  ) : null;
+
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-3 mb-8">
         <ShieldCheck className="w-8 h-8 text-primary" />
@@ -129,7 +164,7 @@ const Administradores = () => {
         </div>
       </div>
 
-      {currentRole?.role === "admin" && <Button asChild className="mb-6"><Link to="/configuracoes"><Plus />Criar usuário</Link></Button>}
+      {canManage && <Button asChild className="mb-6"><Link to="/configuracoes"><Plus />Criar usuário</Link></Button>}
 
       {/* Tabs */}
       <Tabs defaultValue="perfil" className="w-full">
@@ -189,41 +224,49 @@ const Administradores = () => {
           <h2 className="font-display text-xl font-bold text-foreground mb-4">
             Usuários ({regularUsers.length})
           </h2>
-          <div className="rounded-xl border border-border overflow-hidden">
+          <div className="sm:hidden space-y-3">
+            {regularUsers.map((u) => <div key={u.id} className="border border-border rounded-lg p-4 space-y-3">
+              <div><p className="font-medium break-words">{u.display_name}</p><p className="text-sm text-muted-foreground break-all">{u.email}</p></div>
+              <div className="flex items-center justify-between gap-2"><span className="text-sm text-muted-foreground">{disabled(u.user_id) ? "Inativo" : "Ativo"}</span><div className="flex items-center gap-1">
+                {canManage && u.user_id !== user?.id && <Button variant="ghost" size="icon" title="Promover a administrador" aria-label={`Promover ${u.display_name}`} onClick={() => promoteMutation.mutate(u.user_id)}><UserPlus className="w-4 h-4" /></Button>}
+                {accountActions(u.user_id, u.display_name)}
+              </div></div>
+            </div>)}
+          </div>
+          <div className="hidden sm:block rounded-xl border border-border overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-secondary">
                   <th className="text-left px-5 py-3 font-semibold text-foreground">Nome</th>
                   <th className="text-left px-5 py-3 font-semibold text-foreground">E-mail</th>
                   <th className="text-left px-5 py-3 font-semibold text-foreground">Papel</th>
-                  <th className="px-5 py-3 w-16"></th>
+                  <th className="text-left px-3 py-3">Status</th>
+                  <th className="px-3 py-3">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {regularUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-5 py-8 text-center text-muted-foreground">
+                    <td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">
                       Nenhum usuário encontrado
                     </td>
                   </tr>
                 ) : (
                   regularUsers.map((u) => (
                     <tr key={u.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                      <td className="px-5 py-3 font-medium text-foreground">{u.display_name}</td>
-                      <td className="px-5 py-3 text-muted-foreground">{u.email}</td>
+                      <td className="px-3 sm:px-5 py-3 font-medium text-foreground break-words">{u.display_name}</td>
+                      <td className="px-3 sm:px-5 py-3 text-muted-foreground break-all">{u.email}</td>
                       <td className="px-5 py-3">
                         <span className="px-3 py-1 rounded-full text-xs font-bold bg-muted text-muted-foreground">
                           Usuário
                         </span>
                       </td>
-                      <td className="px-5 py-3">
-                        <button
-                          onClick={() => promoteMutation.mutate(u.user_id)}
-                          className="p-2 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                          title="Promover a admin"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                        </button>
+                      <td className="px-3 py-3 text-muted-foreground">{disabled(u.user_id) ? "Inativo" : "Ativo"}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          {canManage && u.user_id !== user?.id && <Button variant="ghost" size="icon" onClick={() => promoteMutation.mutate(u.user_id)} title="Promover a administrador" aria-label={`Promover ${u.display_name}`}><UserPlus className="w-4 h-4" /></Button>}
+                          {accountActions(u.user_id, u.display_name)}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -253,7 +296,7 @@ const Administradores = () => {
               {admins.map((admin) => (
                 <div
                   key={admin.id}
-                  className="bg-card rounded-xl border border-border p-4 flex items-center justify-between"
+                  className="bg-card rounded-xl border border-border p-4 flex flex-wrap gap-3 items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
@@ -261,22 +304,24 @@ const Administradores = () => {
                     </div>
                     <div>
                       <p className="font-medium text-foreground">{admin.display_name}</p>
-                      <p className="text-xs text-muted-foreground">{admin.email}</p>
+                      <p className="text-xs text-muted-foreground break-all">{admin.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                       Admin
                     </span>
-                    {admin.user_id !== user?.id && (
-                      <button
+                    <span className="text-xs text-muted-foreground">{disabled(admin.user_id) ? "Inativo" : "Ativo"}</span>
+                    {canManage && admin.user_id !== user?.id && (
+                      <Button variant="ghost" size="icon"
                         onClick={() => demoteMutation.mutate(admin.user_id)}
-                        className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                        className="text-destructive"
                         title="Remover admin"
                       >
                         <UserMinus className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
+                    {accountActions(admin.user_id, admin.display_name)}
                   </div>
                 </div>
               ))}
@@ -284,6 +329,20 @@ const Administradores = () => {
           )}
         </TabsContent>
       </Tabs>
+      <AlertDialog open={!!confirmation} onOpenChange={(open) => { if (!open && !accountMutation.isPending) setConfirmation(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmation?.action === "delete" ? "Excluir usuário?" : confirmation?.action === "deactivate" ? "Desativar usuário?" : "Reativar usuário?"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmation?.name}. {confirmation?.action === "delete" ? "A exclusão é definitiva. Contas com histórico vinculado devem ser desativadas." : confirmation?.action === "deactivate" ? "O acesso será bloqueado, mantendo o cadastro e o histórico." : "O acesso da conta será restabelecido."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={accountMutation.isPending}>Cancelar</AlertDialogCancel>
+            <Button variant={confirmation?.action === "delete" ? "destructive" : "default"} disabled={accountMutation.isPending} onClick={() => { if (confirmation) accountMutation.mutate(confirmation); }}>{accountMutation.isPending ? "Processando..." : "Confirmar"}</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

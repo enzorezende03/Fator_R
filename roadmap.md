@@ -8,3 +8,8 @@
 - [x] Ensure administrator creation and promotion explicitly grant internal approval.
 - [x] Test approved and unapproved access and recheck the three selected findings; live reads, writes, self-approval denial, and operational restrictions verified; temporary data removed.
 - [x] Mark only the three selected findings fixed; one unrelated password warning left unchanged.
+
+# Gerenciamento de usuários
+- [x] Adicionar desativação, reativação e exclusão confirmadas para administradores.
+- [x] Bloquear acessos de contas desativadas e preservar dados vinculados ao excluir.
+- [x] Testar permissões e o fluxo autenticado na tela de Usuários; desativação, reativação, exclusão, bloqueio de histórico, operacional e celular verificados com contas descartáveis.
