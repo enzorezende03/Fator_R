@@ -31,7 +31,12 @@ export async function createInternalUser(values: InternalUserForm) {
       emailRedirectTo: window.location.origin,
     },
   });
-  if (error) throw error;
+  if (error) {
+    if (error.code === "user_already_exists" || error.message === "User already registered") {
+      throw new Error("Este e-mail já está cadastrado. Consulte a aba Usuários.");
+    }
+    throw new Error("Não foi possível criar o usuário. Verifique os dados e tente novamente.");
+  }
   if (!data.user || data.user.identities?.length === 0) {
     throw new Error("Não foi possível criar a conta. Verifique se o e-mail já está cadastrado.");
   }
